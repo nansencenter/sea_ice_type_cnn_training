@@ -5,7 +5,7 @@ import netCDF4 as nc
 from skimage.util.shape import view_as_windows
 from json import dump, load
 
-def calculate_mask(fil, amsr_labels, sar_names):
+def calculate_mask(fil, amsr_labels, sar_names, distance_threshold):
     """
     This function has four main calculation sections for calculating the mask:
     1. find out the mask of sar size data. This mask is found based on the mask of all data in file
@@ -23,6 +23,8 @@ def calculate_mask(fil, amsr_labels, sar_names):
     fil: netCDF4 file object
     amsr_labels: list of names of amsr2 labels in the file
     sar_names: list of names of sar labels in the file
+    distance_threshold: integer indicating the threshold for considering the mask based on distance
+    to land values.
     ====
     outputs:
     final_ful_mask:
@@ -38,7 +40,7 @@ def calculate_mask(fil, amsr_labels, sar_names):
         mask_isfinite = np.ma.getmaskarray(~np.isfinite(fil[str_]))
         mask = np.ma.mask_or(mask, mask_isfinite)
     # ground data is also masked
-    mask_sar_size = np.ma.mask_or(mask, np.ma.getdata(fil['distance_map']) == 0)
+    mask_sar_size = np.ma.mask_or(mask, np.ma.getdata(fil['distance_map']) <= distance_threshold)
     ##2. get the mask of amsr2 data
     for amsr_label in amsr_labels:
         mask_amsr = np.ma.getmaskarray(fil[amsr_label])
@@ -171,6 +173,7 @@ def main():
     datapath = sys.argv[1]
     outpath = sys.argv[2]
     rm_swath = 0
+    distance_threshold = 0
     amsr_labels = ['btemp_6.9h', 'btemp_6.9v', 'btemp_7.3h', 'btemp_7.3v',
                 'btemp_10.7h', 'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v',
                 'btemp_23.8h', 'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v',
@@ -231,7 +234,7 @@ def main():
             polygon_ids = np.ma.getdata(fil["polygon_icechart"])
 
             (final_ful_mask, final_mask_with_amsr2_size, pads) = calculate_mask(fil, amsr_labels,
-                                                                                 sar_names)
+                                                                    sar_names, distance_threshold)
 
             mask_batches = view_as_windows(final_ful_mask, window_size, stride_sar_size)
 
