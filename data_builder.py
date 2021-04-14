@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import netCDF4 as nc
 from skimage.util.shape import view_as_windows
-
+from json import dump, load
 
 def calculate_mask(fil, amsr_labels, sar_names):
     """
@@ -181,8 +181,16 @@ def main():
     sar_names = [nersc+'sar_primary',nersc+'sar_secondary']
     if not os.path.exists(outpath):
         os.mkdir(outpath)
-
-    files = [elem for elem in os.listdir(datapath) if elem.endswith(".nc")]
+    try:
+        with open(os.path.join(outpath,"processed_files.json")) as json_file:
+            processed_files = load(json_file)
+    except FileNotFoundError:
+        print("all files are being processed!")
+        processed_files = []
+    files=[]
+    for elem in os.listdir(datapath):
+        if (elem.endswith(".nc") and elem not in processed_files):
+            files.append(elem)
     window_size_amsr2 = (10, 10)
     window_size = (window_size_amsr2[0]*50, window_size_amsr2[1]*50)
     stride_ams2_size = 10
@@ -258,6 +266,13 @@ def main():
             del fil, dict_for_saving, final_ful_mask, final_mask_with_amsr2_size
             for useless_variable_after_save in desired_variable_names:
                 del globals()[useless_variable_after_save]
+
+    if processed_files == []:
+        processed_files = files
+    else:
+        processed_files.append(*files) if (files and files not in processed_files) else None
+    with open(os.path.join(outpath, "processed_files.json"), 'w') as outfile:
+        dump(processed_files, outfile)
 
 if __name__ == "__main__":
     main()
