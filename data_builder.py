@@ -169,7 +169,7 @@ def create_amsr2_variables_for_ML_training(
         del values_array
     del mask_batches_amsr2
 
-def main():
+def read_input_params():
     datapath = sys.argv[1]
     outpath = sys.argv[2]
     rm_swath = 0
@@ -178,12 +178,20 @@ def main():
                 'btemp_10.7h', 'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v',
                 'btemp_23.8h', 'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v',
                 'btemp_89.0h', 'btemp_89.0v']
+    window_size_amsr2 = (14, 14)
+    window_size = (window_size_amsr2[0]*50, window_size_amsr2[1]*50)
+    stride_ams2_size = 14
+    stride_sar_size = stride_ams2_size*50
 
     nersc = 'nersc_'  # Leave as empty string '' for ESA noise corrections or as 'nersc_'
     # for the Nansen center noise correction.
     sar_names = [nersc+'sar_primary',nersc+'sar_secondary']
     if not os.path.exists(outpath):
         os.mkdir(outpath)
+    return (sar_names, nersc, stride_sar_size,stride_ams2_size,window_size,window_size_amsr2,
+        amsr_labels,distance_threshold,rm_swath,outpath, datapath)
+
+def get_unprocessed_files(outpath, datapath):
     try:
         with open(os.path.join(outpath,"processed_files.json")) as json_file:
             processed_files = load(json_file)
@@ -194,44 +202,63 @@ def main():
     for elem in os.listdir(datapath):
         if (elem.endswith(".nc") and elem not in processed_files):
             files.append(elem)
-    window_size_amsr2 = (10, 10)
-    window_size = (window_size_amsr2[0]*50, window_size_amsr2[1]*50)
-    stride_ams2_size = 10
-    stride_sar_size = stride_ams2_size*50
+    return files, processed_files
+
+def file_health_check(fil, rm_swath, outpath,amsr_labels,window_size,filename):
+    if 'polygon_icechart' not in fil.variables:
+        print(f"'polygon_icechart' should be in 'fil.variables'. for {fil}")
+        return False
+    lowerbound = max([rm_swath, fil.aoi_upperleft_sample])
+    if amsr_labels and not (amsr_labels[0] in fil.variables):
+        f = open(os.path.join(outpath,"/discarded_files.txt"), "a")
+        f.write(filename+",missing AMSR file"+"\n")
+        f.close()
+        print("wrote "+filename+" to discarded_files.txt in "+outpath)
+        return False
+    elif ((fil.aoi_lowerright_sample-lowerbound) < window_size[0] or
+        (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < window_size[1]):
+        f = open(os.path.join(outpath,"/discarded_files.txt"), "a")
+        f.write(filename+",unmasked scene is too small"+"\n")
+        f.close()
+        print("wrote "+filename+" to discarded_files.txt in "+outpath)
+        return False
+    else:
+        return True
+
+def read_file_info(fil, filename):
+    scene = filename.split('_')[0]
+    #just from beginning up to variable 'FC' is considered, thus it is [:11] in line below
+    names_polygon_codes = fil['polygon_codes'][0].split(";")[:11]
+    map_id_to_variable_values = {}  # initialization
+    # this dictionary has the ID as key and the corresponding values
+    # as a list at the 'value postion' of that key in the dictionary.
+    for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
+        id_val_splitted = id_and_corresponding_variable_values.split(";")
+        map_id_to_variable_values.update({int(id_val_splitted[0]): id_val_splitted[1:]})
+    polygon_ids = np.ma.getdata(fil["polygon_icechart"])
+    return (polygon_ids, map_id_to_variable_values, names_polygon_codes, scene)
+
+
+
+def update_processed_files(processed_files, files, outpath):
+    if processed_files == []:
+        processed_files = files
+    else:
+        processed_files.append(*files) if (files and files not in processed_files) else None
+    with open(os.path.join(outpath, "processed_files.json"), 'w') as outfile:
+        dump(processed_files, outfile)
+
+def main():
+
+    (sar_names, nersc, stride_sar_size,stride_ams2_size,window_size,window_size_amsr2,
+        amsr_labels,distance_threshold,rm_swath,outpath, datapath) = read_input_params()
+    files, processed_files = get_unprocessed_files(outpath, datapath)
     for i, filename in enumerate(files):
         print("Starting %d out of %d files" % (i, len(files)))
-
         fil = nc.Dataset(os.path.join(datapath,filename))
-        if 'polygon_icechart' not in fil.variables:
-            print(f"'polygon_icechart' should be in 'fil.variables'. for {fil}")
-            continue
-        lowerbound = max([rm_swath, fil.aoi_upperleft_sample])
-        if amsr_labels and not (amsr_labels[0] in fil.variables):
-            f = open(os.path.join(outpath,"/discarded_files.txt"), "a")
-            f.write(filename+",missing AMSR file"+"\n")
-            f.close()
-            print("wrote "+filename+" to discarded_files.txt in "+outpath)
-        elif ((fil.aoi_lowerright_sample-lowerbound) < window_size[0] or
-            (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < window_size[1]):
-            f = open(os.path.join(outpath,"/discarded_files.txt"), "a")
-            f.write(filename+",unmasked scene is too small"+"\n")
-            f.close()
-            print("wrote "+filename+" to discarded_files.txt in "+outpath)
+        if file_health_check(fil, rm_swath, outpath,amsr_labels,window_size,filename):
 
-        else:
-        ######################
-        # Process scene      #
-        ######################
-            scene = filename.split('_')[0]
-            #just from beginning up to variable 'FC' is considered, thus it is [:11] in line below
-            names_polygon_codes = fil['polygon_codes'][0].split(";")[:11]
-            map_id_to_variable_values = {}  # initialization
-            # this dictionary has the ID as key and the corresponding values
-            # as a list at the 'value postion' of that key in the dictionary.
-            for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
-                id_val_splitted = id_and_corresponding_variable_values.split(";")
-                map_id_to_variable_values.update({int(id_val_splitted[0]): id_val_splitted[1:]})
-            polygon_ids = np.ma.getdata(fil["polygon_icechart"])
+            (polygon_ids, map_id_to_variable_values, names_polygon_codes, scene) = read_file_info(fil, filename)
 
             (final_ful_mask, final_mask_with_amsr2_size, pads) = calculate_mask(fil, amsr_labels,
                                                                     sar_names, distance_threshold)
@@ -270,12 +297,7 @@ def main():
             for useless_variable_after_save in desired_variable_names:
                 del globals()[useless_variable_after_save]
 
-    if processed_files == []:
-        processed_files = files
-    else:
-        processed_files.append(*files) if (files and files not in processed_files) else None
-    with open(os.path.join(outpath, "processed_files.json"), 'w') as outfile:
-        dump(processed_files, outfile)
+    update_processed_files(processed_files, files, outpath)
 
 if __name__ == "__main__":
     main()
