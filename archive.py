@@ -128,7 +128,7 @@ class archive():
 
     @staticmethod
     def downsample_mask_for_amsr2(final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1):
-        # 4. final mask must also be available in the amsr2 size, so based on each patch of true/false
+        #4.final mask must also be available in the amsr2 size, so based on each patch of true/false
         # values inside it, it should be only one single value of true/false in that location.
         final_ful_mask_row_splitted = np.split(final_ful_mask, shape_mask_amsr_0)
         final_mask_with_amsr2_size = np.empty([shape_mask_amsr_0, shape_mask_amsr_1])
@@ -181,83 +181,65 @@ class archive():
         # 3. final mask based on two masks
         self.final_ful_mask = np.ma.mask_or(mask_sar_size, mask_amsr)  # combination of masks
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
-            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1)
+            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
+            )
 
 
-    def create_sar_variables_for_ML_training(self, fil, mask_batches):
+    def create_sar_variables_for_ML_training(self, fil):
         """
         This function calculates the sar data and store them in a global variable with the same name
         """
-        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
         for sar_name in self.SAR_NAMES:
-            values_array = np.ma.getdata(fil[sar_name])
-            values_array = np.pad(
-                values_array, ((pad_hight_up, pad_hight_down), (pad_width_west, pad_width_east)),
-                'constant', constant_values=(None, None))
-            batches = view_as_windows(values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
-            # initiation of the array with one single layer of empty data (meaningless values)
-            template_sar_float32 = np.empty(self.WINDOW_SIZE).astype(np.float32)
-            for ix, iy in np.ndindex(batches.shape[:2]):
-                if (~mask_batches[ix, iy]).all():
-                    # stack data in 3rd dimension
-                    template_sar_float32 = np.dstack((template_sar_float32, batches[ix, iy]))
-            # remove the first empty values
-            self.PROP.update({sar_name: template_sar_float32[:, :, 1:].astype(np.float32)})
-            del template_sar_float32
-            del values_array
-            del batches
+            # initiation of the array
+            template_sar_float32 = []
+            for ix, iy in np.ndindex(self.sar_batches[sar_name].shape[:2]):
+                if (~self.mask_batches[ix, iy]).all():
+                    template_sar_float32.append(self.sar_batches[sar_name][ix, iy].astype(np.float32))
 
-    def create_output_variables_for_ML_training(self, mask_batches):
+            self.PROP.update({sar_name: template_sar_float32})
+            del template_sar_float32
+        del self.sar_batches
+
+    def create_output_variables_for_ML_training(self):
         """
-        This function calculates the output data and store them in a global variable with the same name
-        of them in the file for example 'CT' or 'CA' etc.
+        This function calculates the output data and store them in a global variable with the same
+        name of them in the file for example 'CT' or 'CA' etc.
         """
-        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
-        for index in range(10):  # iterating over variables that must be saved for example 'CT' or 'CA'
-            values_array = self.polygon_ids
-            values_array = np.pad(
-                values_array, ((pad_hight_up, pad_hight_down),
-                               (pad_width_west, pad_width_east)),
-                'constant', constant_values=(0, 0)).astype(np.byte)
-            batches = view_as_windows(values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
-            # initiation of the array with one single layer of empty data (meaningless values)
-            template_sar = np.empty(self.WINDOW_SIZE).astype(np.byte)
-            for ix, iy in np.ndindex(batches.shape[:2]):
-                if (~mask_batches[ix, iy]).all():
-                    raw_id_values = batches[ix, iy]
+
+        for index in range(10):#iterating over variables that must be saved for example 'CT' or 'CA'
+            # initiation of the array
+            template_sar = []
+            for ix, iy in np.ndindex(self.polygon_ids_batches.shape[:2]):
+                if (~self.mask_batches[ix, iy]).all():
+                    raw_id_values = self.polygon_ids_batches[ix, iy]
                     for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
                         # each loop changes all locations of raw_id_values (that have the very
                         # 'id_value') to its corresponding value inside 'variable_belong_to_id'
                         raw_id_values[raw_id_values == id_value] = np.byte(
-                            variable_belong_to_id[index])
-                    # stack to the data in 3rd dimension
-                    template_sar = np.dstack((template_sar, raw_id_values))
+                                                                        variable_belong_to_id[index]
+                                                                            )
+                    template_sar.append(raw_id_values)
 
-            self.PROP.update({self.names_polygon_codes[index+1]: template_sar[:, :, 1:]})
+            self.PROP.update({self.names_polygon_codes[index+1]: template_sar})
             del template_sar
-            del batches
-            del values_array
+        del self.polygon_ids_batches
 
     def create_amsr2_variables_for_ML_training(self, fil):
         """
-        This function calculates the amsr2 data and store them in a global variable with the same name
+        This function calculates the amsr2 data and store them in a global variable with the same
+        name
         """
-        mask_batches_amsr2 = view_as_windows(
-            self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
         for amsr_label in self.AMSR_LABELS:
-            values_array = np.ma.getdata(fil[amsr_label])
-            batches = view_as_windows(values_array, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
-            # initiation of the array with one single layer of data
-            template_amsr2 = np.empty(self.WINDOW_SIZE_AMSR2).astype(np.float32)
-            for ix, iy in np.ndindex(batches.shape[:2]):
-                if (~mask_batches_amsr2[ix, iy]).all():
-                    # stack the data in 3rd dimension
-                    template_amsr2 = np.dstack((template_amsr2, batches[ix, iy]))
-            self.PROP.update({amsr_label.replace(".", "_"): template_amsr2[:, :, 1:].astype(np.float32)})
+            # initiation of the array
+            template_amsr2 = []
+            for ix, iy in np.ndindex(self.amsr_batches[amsr_label].shape[:2]):
+                if (~self.mask_batches_amsr2[ix, iy]).all():
+                    template_amsr2.append(self.amsr_batches[amsr_label][ix, iy].astype(np.float32))
+            self.PROP.update({amsr_label.replace(".", "_"): template_amsr2})
             del template_amsr2
-            del batches
-            del values_array
-        del mask_batches_amsr2
+        del self.amsr_batches
+        del self.mask_batches_amsr2
+
 
     def write_scene_files(self):
         desired_variable_names = self.SAR_NAMES+self.AMSR_LABELS+self.names_polygon_codes[1:]
@@ -267,14 +249,53 @@ class archive():
         # This way, it is compatible with the generator
         # code explained in link below
         # https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-        for i in np.arange(np.shape(self.PROP['CT'])[2]):
-            # third dim is equal for both sizes of input as well as the output data.Here CT
+        for i in range(len(self.PROP['CT'])):
+            # the len is equal for both sizes of input as well as the output data. Here 'CT'
             # variable is selected as one of them in the for loop.
             dict_for_saving = {}
             for name_without_dot in desired_variable_names:
                 dict_for_saving.update(
-                    {name_without_dot: self.PROP[name_without_dot][:, :, i]})
-            np.savez(f"{os.path.join(self.OUTPATH,self.scene)}_{i:0>6}_{self.NERSC}", **dict_for_saving)
+                    {name_without_dot: self.PROP[name_without_dot][i]})
+            np.savez(
+                f"{os.path.join(self.OUTPATH,self.scene)}_{i:0>6}_{self.NERSC}", **dict_for_saving)
         del dict_for_saving, self.final_ful_mask, self.final_mask_with_amsr2_size
         del self.PROP
         self.PROP = {}
+
+    def see_masks_as_batches(self):
+        self.mask_batches = view_as_windows(
+                    self.final_ful_mask, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE
+                )
+        self.mask_batches_amsr2 = view_as_windows(
+                self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
+
+    def pad_and_batch_polygon_id(self):
+        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
+        values_array = self.polygon_ids
+        values_array = np.pad(
+            values_array, ((pad_hight_up, pad_hight_down),
+                           (pad_width_west, pad_width_east)),
+            'constant', constant_values=(0, 0)).astype(np.byte)
+        self.polygon_ids_batches = view_as_windows(
+            values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
+
+    def pad_and_batch_sar_variables(self, fil):
+        """
+        This function calculates the sar data and store them in a global variable with the same name
+        """
+        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
+        self.sar_batches={}
+        for sar_name in self.SAR_NAMES:
+            values_array = np.ma.getdata(fil[sar_name])
+            values_array = np.pad(
+                values_array, ((pad_hight_up, pad_hight_down), (pad_width_west, pad_width_east)),
+                'constant', constant_values=(None, None))
+            self.sar_batches.update({sar_name : view_as_windows(
+                values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)})
+
+    def batch_amsr2(self,fil):
+        self.amsr_batches={}
+        for amsr_label in self.AMSR_LABELS:
+            values_array = np.ma.getdata(fil[amsr_label])
+            self.amsr_batches.update({amsr_label : view_as_windows(
+                values_array, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)})

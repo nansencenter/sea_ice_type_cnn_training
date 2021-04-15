@@ -31,9 +31,9 @@ def read_input_params():
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-    window_size_amsr2 = (14, 14)
+    window_size_amsr2 = (5, 5)
     window_size = (window_size_amsr2[0] * 50, window_size_amsr2[1] * 50)
-    stride_ams2_size = 14
+    stride_ams2_size = 5
     stride_sar_size = stride_ams2_size * 50
 
     sar_names = [nersc + "sar_primary", nersc + "sar_secondary"]
@@ -60,7 +60,7 @@ def main():
     archive_ = read_input_params()
     archive_.get_unprocessed_files()
     for i, filename in enumerate(archive_.files):
-        print("Starting %d out of %d files" % (i, len(archive_.files)))
+        print("Starting %d out of %d unprocessed files" % (i, len(archive_.files)))
         fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
         if archive_.check_file_healthiness(fil, filename):
 
@@ -68,14 +68,16 @@ def main():
 
             archive_.calculate_mask(fil)
 
-            mask_batches = view_as_windows(
-                archive_.final_ful_mask, archive_.WINDOW_SIZE, archive_.STRIDE_SAR_SIZE
-            )
+            archive_.see_masks_as_batches()
 
-            archive_.create_sar_variables_for_ML_training(fil, mask_batches)
+            archive_.pad_and_batch_sar_variables(fil)
+            archive_.create_sar_variables_for_ML_training(fil)
 
-            archive_.create_output_variables_for_ML_training(mask_batches)
-            del mask_batches
+            archive_.pad_and_batch_polygon_id()
+            archive_.create_output_variables_for_ML_training()
+            del archive_.mask_batches
+
+            archive_.batch_amsr2(fil)
             archive_.create_amsr2_variables_for_ML_training(fil)
             # saving section
             archive_.write_scene_files()
