@@ -8,28 +8,28 @@ from skimage.util.shape import view_as_windows
 class archive():
     def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
                  window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath):
-        self.sar_names = sar_names
-        self.nersc = nersc
-        self.stride_sar_size = stride_sar_size
-        self.stride_ams2_size = stride_ams2_size
-        self.window_size = window_size
-        self.window_size_amsr2 = window_size_amsr2
-        self.amsr_labels = amsr_labels
-        self.distance_threshold = distance_threshold
-        self.rm_swath = rm_swath
-        self.outpath = outpath
-        self.datapath = datapath
-        self.prop = {}
+        self.SAR_NAMES = sar_names
+        self.NERSC = nersc
+        self.STRIDE_SAR_SIZE = stride_sar_size
+        self.STRIDE_AMS2_SIZE = stride_ams2_size
+        self.WINDOW_SIZE = window_size
+        self.WINDOW_SIZE_AMSR2 = window_size_amsr2
+        self.AMSR_LABELS = amsr_labels
+        self.DISTANCE_THRESHOLD = distance_threshold
+        self.RM_SWATH = rm_swath
+        self.OUTPATH = outpath
+        self.DATAPATH = datapath
+        self.PROP = {}
 
     def get_unprocessed_files(self):
         try:
-            with open(os.path.join(self.outpath, "processed_files.json")) as json_file:
+            with open(os.path.join(self.OUTPATH, "processed_files.json")) as json_file:
                 self.processed_files = load(json_file)
         except FileNotFoundError:
             print("all files are being processed!")
             self.processed_files = []
         self.files = []
-        for elem in os.listdir(self.datapath):
+        for elem in os.listdir(self.DATAPATH):
             if (elem.endswith(".nc") and elem not in self.processed_files):
                 self.files.append(elem)
 
@@ -37,26 +37,26 @@ class archive():
 
         self.processed_files.append(self.files[i]) if (
             self.files[i] and self.files[i] not in self.processed_files) else None
-        with open(os.path.join(self.outpath, "processed_files.json"), 'w') as outfile:
+        with open(os.path.join(self.OUTPATH, "processed_files.json"), 'w') as outfile:
             dump(self.processed_files, outfile)
 
     def check_file_healthiness(self, fil, filename):
         if 'polygon_icechart' not in fil.variables:
             print(f"'polygon_icechart' should be in 'fil.variables'. for {fil}")
             return False
-        lowerbound = max([self.rm_swath, fil.aoi_upperleft_sample])
-        if self.amsr_labels and not (self.amsr_labels[0] in fil.variables):
-            f = open(os.path.join(self.outpath, "/discarded_files.txt"), "a")
+        lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
+        if self.AMSR_LABELS and not (self.AMSR_LABELS[0] in fil.variables):
+            f = open(os.path.join(self.OUTPATH, "/discarded_files.txt"), "a")
             f.write(filename+",missing AMSR file"+"\n")
             f.close()
-            print("wrote "+filename+" to discarded_files.txt in "+self.outpath)
+            print("wrote "+filename+" to discarded_files.txt in "+self.OUTPATH)
             return False
-        elif ((fil.aoi_lowerright_sample-lowerbound) < self.window_size[0] or
-              (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.window_size[1]):
-            f = open(os.path.join(self.outpath, "/discarded_files.txt"), "a")
+        elif ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
+              (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.WINDOW_SIZE[1]):
+            f = open(os.path.join(self.OUTPATH, "/discarded_files.txt"), "a")
             f.write(filename+",unmasked scene is too small"+"\n")
             f.close()
-            print("wrote "+filename+" to discarded_files.txt in "+self.outpath)
+            print("wrote "+filename+" to discarded_files.txt in "+self.OUTPATH)
             return False
         else:
             return True
@@ -173,10 +173,10 @@ class archive():
         of pixels
         """
         # 1. get the mask of sar data
-        mask_sar_size = self.get_the_mask_of_sar_data(self.sar_names, fil, self.distance_threshold)
+        mask_sar_size = self.get_the_mask_of_sar_data(self.SAR_NAMES, fil, self.DISTANCE_THRESHOLD)
         # 2. get the mask of amsr2 data
         mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1 = self.get_the_mask_of_amsr2_data(
-            self.amsr_labels, fil)
+            self.AMSR_LABELS, fil)
         mask_sar_size, self.pads = self.padding(mask_amsr, mask_sar_size)
         # 3. final mask based on two masks
         self.final_ful_mask = np.ma.mask_or(mask_sar_size, mask_amsr)  # combination of masks
@@ -189,20 +189,20 @@ class archive():
         This function calculates the sar data and store them in a global variable with the same name
         """
         (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
-        for sar_name in self.sar_names:
+        for sar_name in self.SAR_NAMES:
             values_array = np.ma.getdata(fil[sar_name])
             values_array = np.pad(
                 values_array, ((pad_hight_up, pad_hight_down), (pad_width_west, pad_width_east)),
                 'constant', constant_values=(None, None))
-            batches = view_as_windows(values_array, self.window_size, self.stride_sar_size)
+            batches = view_as_windows(values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
             # initiation of the array with one single layer of empty data (meaningless values)
-            template_sar_float32 = np.empty(self.window_size).astype(np.float32)
+            template_sar_float32 = np.empty(self.WINDOW_SIZE).astype(np.float32)
             for ix, iy in np.ndindex(batches.shape[:2]):
                 if (~mask_batches[ix, iy]).all():
                     # stack data in 3rd dimension
                     template_sar_float32 = np.dstack((template_sar_float32, batches[ix, iy]))
             # remove the first empty values
-            self.prop.update({sar_name: template_sar_float32[:, :, 1:].astype(np.float32)})
+            self.PROP.update({sar_name: template_sar_float32[:, :, 1:].astype(np.float32)})
             del template_sar_float32
             del values_array
             del batches
@@ -219,9 +219,9 @@ class archive():
                 values_array, ((pad_hight_up, pad_hight_down),
                                (pad_width_west, pad_width_east)),
                 'constant', constant_values=(0, 0)).astype(np.byte)
-            batches = view_as_windows(values_array, self.window_size, self.stride_sar_size)
+            batches = view_as_windows(values_array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
             # initiation of the array with one single layer of empty data (meaningless values)
-            template_sar = np.empty(self.window_size).astype(np.byte)
+            template_sar = np.empty(self.WINDOW_SIZE).astype(np.byte)
             for ix, iy in np.ndindex(batches.shape[:2]):
                 if (~mask_batches[ix, iy]).all():
                     raw_id_values = batches[ix, iy]
@@ -233,7 +233,7 @@ class archive():
                     # stack to the data in 3rd dimension
                     template_sar = np.dstack((template_sar, raw_id_values))
 
-            self.prop.update({self.names_polygon_codes[index+1]: template_sar[:, :, 1:]})
+            self.PROP.update({self.names_polygon_codes[index+1]: template_sar[:, :, 1:]})
             del template_sar
             del batches
             del values_array
@@ -243,38 +243,38 @@ class archive():
         This function calculates the amsr2 data and store them in a global variable with the same name
         """
         mask_batches_amsr2 = view_as_windows(
-            self.final_mask_with_amsr2_size, self.window_size_amsr2, self.stride_ams2_size)
-        for amsr_label in self.amsr_labels:
+            self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
+        for amsr_label in self.AMSR_LABELS:
             values_array = np.ma.getdata(fil[amsr_label])
-            batches = view_as_windows(values_array, self.window_size_amsr2, self.stride_ams2_size)
+            batches = view_as_windows(values_array, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
             # initiation of the array with one single layer of data
-            template_amsr2 = np.empty(self.window_size_amsr2).astype(np.float32)
+            template_amsr2 = np.empty(self.WINDOW_SIZE_AMSR2).astype(np.float32)
             for ix, iy in np.ndindex(batches.shape[:2]):
                 if (~mask_batches_amsr2[ix, iy]).all():
                     # stack the data in 3rd dimension
                     template_amsr2 = np.dstack((template_amsr2, batches[ix, iy]))
-            self.prop.update({amsr_label.replace(".", "_"): template_amsr2[:, :, 1:].astype(np.float32)})
+            self.PROP.update({amsr_label.replace(".", "_"): template_amsr2[:, :, 1:].astype(np.float32)})
             del template_amsr2
             del batches
             del values_array
         del mask_batches_amsr2
 
     def write_scene_files(self):
-        desired_variable_names = self.sar_names+self.amsr_labels+self.names_polygon_codes[1:]
+        desired_variable_names = self.SAR_NAMES+self.AMSR_LABELS+self.names_polygon_codes[1:]
         # removing dot from the name of variable
         desired_variable_names = [x.replace(".", "_") for x in desired_variable_names]
         # loop for saving each batch of separately in each file.
         # This way, it is compatible with the generator
         # code explained in link below
         # https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-        for i in np.arange(np.shape(self.prop['CT'])[2]):
+        for i in np.arange(np.shape(self.PROP['CT'])[2]):
             # third dim is equal for both sizes of input as well as the output data.Here CT
             # variable is selected as one of them in the for loop.
             dict_for_saving = {}
             for name_without_dot in desired_variable_names:
                 dict_for_saving.update(
-                    {name_without_dot: self.prop[name_without_dot][:, :, i]})
-            np.savez(f"{os.path.join(self.outpath,self.scene)}_{i:0>6}_{self.nersc}", **dict_for_saving)
+                    {name_without_dot: self.PROP[name_without_dot][:, :, i]})
+            np.savez(f"{os.path.join(self.OUTPATH,self.scene)}_{i:0>6}_{self.NERSC}", **dict_for_saving)
         del dict_for_saving, self.final_ful_mask, self.final_mask_with_amsr2_size
-        del self.prop
-        self.prop = {}
+        del self.PROP
+        self.PROP = {}

@@ -61,7 +61,7 @@ def main():
     archive_.get_unprocessed_files()
     for i, filename in enumerate(archive_.files):
         print("Starting %d out of %d files" % (i, len(archive_.files)))
-        fil = nc.Dataset(os.path.join(archive_.datapath, filename))
+        fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
         if archive_.check_file_healthiness(fil, filename):
 
             archive_.read_file_info(fil, filename)
@@ -69,7 +69,7 @@ def main():
             archive_.calculate_mask(fil)
 
             mask_batches = view_as_windows(
-                archive_.final_ful_mask, archive_.window_size, archive_.stride_sar_size
+                archive_.final_ful_mask, archive_.WINDOW_SIZE, archive_.STRIDE_SAR_SIZE
             )
 
             archive_.create_sar_variables_for_ML_training(fil, mask_batches)
