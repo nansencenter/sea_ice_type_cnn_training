@@ -31,9 +31,9 @@ def read_input_params():
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-    window_size_amsr2 = (5, 5)
+    window_size_amsr2 = (14, 14)
     window_size = (window_size_amsr2[0] * 50, window_size_amsr2[1] * 50)
-    stride_ams2_size = 5
+    stride_ams2_size = 14
     stride_sar_size = stride_ams2_size * 50
 
     sar_names = [nersc + "sar_primary", nersc + "sar_secondary"]
@@ -63,22 +63,14 @@ def main():
         print("Starting %d out of %d unprocessed files" % (i, len(archive_.files)))
         fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
         if archive_.check_file_healthiness(fil, filename):
-
             archive_.read_file_info(fil, filename)
-
             archive_.calculate_mask(fil)
+            archive_.calculate_batches_for_masks()
+            archive_.define_util()
+            for str_ in ["sar","output","amsr2"]:
+                archive_.pad_and_batch(fil,str_)
+                archive_.calculate_variable_ML(str_)
 
-            archive_.see_masks_as_batches()
-
-            archive_.pad_and_batch_sar_variables(fil)
-            archive_.create_sar_variables_for_ML_training(fil)
-
-            archive_.pad_and_batch_polygon_id()
-            archive_.create_output_variables_for_ML_training()
-            del archive_.mask_batches
-
-            archive_.batch_amsr2(fil)
-            archive_.create_amsr2_variables_for_ML_training(fil)
             # saving section
             archive_.write_scene_files()
             archive_.update_processed_files(i)
