@@ -5,7 +5,7 @@ import numpy as np
 from skimage.util.shape import view_as_windows
 
 
-class archive():
+class Archive():
     def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
                  window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath):
         self.SAR_NAMES = sar_names
@@ -54,7 +54,7 @@ class archive():
                        "batches_mask": self.mask_batches,
                        "name_for_getdata": lambda name: "polygon_icechart",
                        "pading": lambda x: self.pading(x, np.byte, 0),
-                       "convert": lambda values_array, element: self.convert_variables(values_array, element),
+                       "convert": lambda values_array, element: self.encode_icechart(values_array, element),
                        "win_func": lambda x: self.view_as_windows_for_sar_size(x)
                        }
         }
@@ -102,7 +102,7 @@ class archive():
         else:
             return True
 
-    def read_file_info(self, fil, filename):
+    def read_icechart_coding(self, fil, filename):
         """
         based on 'polygon_codes' and 'polygon_icechart' section of netCDF file as well as the name
         of the file, this function set the values of properties of 'polygon_ids', 'scene',
@@ -317,7 +317,7 @@ class archive():
                         'constant', constant_values=(constant_value, constant_value)).astype(astype)
         return values_array
 
-    def convert_variables(self, values_array, element):
+    def encode_icechart(self, values_array, element):
         """
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
