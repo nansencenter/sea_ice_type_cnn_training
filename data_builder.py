@@ -67,9 +67,9 @@ def main():
             archive_.calculate_mask(fil)
             archive_.calculate_batches_for_masks()
             archive_.define_util()
-            for str_ in ["sar","output","amsr2"]:
-                archive_.pad_and_batch(fil,str_)
-                archive_.calculate_variable_ML(str_)
+            for switch in ["sar","output","amsr2"]:
+                archive_.pad_and_batch(fil,switch)
+                archive_.calculate_variable_ML(switch)
 
             # saving section
             archive_.write_scene_files()

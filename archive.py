@@ -19,9 +19,12 @@ class archive():
         self.RM_SWATH = rm_swath
         self.OUTPATH = outpath
         self.DATAPATH = datapath
-        self.PROP = {}
+        self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
+                      # different locations.
 
     def define_util(self):
+        """ This function has 'self.util' which contains all functions or values needed for
+        processing the data """
         self.output_batches = {}
         self.sar_batches = {}
         self.amsr_batches = {}
@@ -31,33 +34,37 @@ class archive():
                     "astype": np.float32,
                     "batches_array": self.sar_batches,
                     "batches_mask": self.mask_batches,
-                    "getdata": lambda name: name,
+                    "name_for_getdata": lambda name: name,
                     "pading": lambda x: self.pading(x, np.float32, None),
-                    "covert": lambda values_array, name: values_array,
+                    "convert": lambda values_array, element: values_array,
                     "win_func": lambda x: self.view_as_windows_for_sar_size(x)},
             "amsr2": {"name_conventer": lambda name: name.replace(".", "_"),
                       "loop_list": self.AMSR_LABELS,
                       "astype": np.float32,
                       "batches_array": self.amsr_batches,
                       "batches_mask": self.mask_batches_amsr2,
-                      "getdata": lambda name: name,
+                      "name_for_getdata": lambda name: name,
                       "pading": lambda x: x,
-                      "covert": lambda values_array, name: values_array,
+                      "convert": lambda values_array, element: values_array,
                       "win_func": lambda x: self.view_as_windows_for_amsr2_size(x)},
             "output": {"name_conventer": lambda name: self.names_polygon_codes[name+1],
                        "loop_list": range(10),
                        "astype": np.byte,
                        "batches_array": self.output_batches,
                        "batches_mask": self.mask_batches,
-                       "getdata": lambda name: "polygon_icechart",
+                       "name_for_getdata": lambda name: "polygon_icechart",
                        "pading": lambda x: self.pading(x, np.byte, 0),
-                       "covert": lambda values_array, name: self.convert_variables(values_array, name),
+                       "convert": lambda values_array, element: self.convert_variables(values_array, element),
                        "win_func": lambda x: self.view_as_windows_for_sar_size(x)
-
                        }
         }
 
     def get_unprocessed_files(self):
+        """
+        Two function do two jobs:
+        1. Read the list of processed files from 'processed_files.json'
+        2. find out which files in directory of archive has not been processed compared to
+        'self.processed_files'  and save them as 'self.files'. """
         try:
             with open(os.path.join(self.OUTPATH, "processed_files.json")) as json_file:
                 self.processed_files = load(json_file)
@@ -70,46 +77,52 @@ class archive():
                 self.files.append(elem)
 
     def update_processed_files(self, i):
-
+        """update 'self.processed_files' based on 'self.files' and store the with a file named
+        'processed_files.json'. """
         self.processed_files.append(self.files[i]) if (
             self.files[i] and self.files[i] not in self.processed_files) else None
         with open(os.path.join(self.OUTPATH, "processed_files.json"), 'w') as outfile:
             dump(self.processed_files, outfile)
 
     def check_file_healthiness(self, fil, filename):
-            if 'polygon_icechart' not in fil.variables:
-                print(f"'polygon_icechart' should be in 'fil.variables'. for {filename}")
-                return False
-            lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
-            if self.AMSR_LABELS and not (self.AMSR_LABELS[0] in fil.variables):
-                print(f"{filename},missing AMSR file")
-                return False
-            elif ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
-                  (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.WINDOW_SIZE[1]):
-                print(f"{filename},unmasked scene is too small")
-                return False
-            else:
-                return True
+        """Check the healthiness of file by checking the existance of 'polygon_icechart' and
+        AMSR LABELS in the 'variables' section of NETCDF file. The comparison of window size and
+        size of the file is also done at the end. """
+        if 'polygon_icechart' not in fil.variables:
+            print(f"'polygon_icechart' should be in 'fil.variables'. for {filename}")
+            return False
+        lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
+        if not (self.AMSR_LABELS[0] in fil.variables):
+            print(f"{filename},missing AMSR file")
+            return False
+        elif ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
+                (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.WINDOW_SIZE[1]):
+            print(f"{filename},unmasked scene is too small")
+            return False
+        else:
+            return True
 
     def read_file_info(self, fil, filename):
-        scene = filename.split('_')[0]
+        """
+        based on 'polygon_codes' and 'polygon_icechart' section of netCDF file as well as the name
+        of the file, this function set the values of properties of 'polygon_ids', 'scene',
+        'names_polygon_codes' and 'map_id_to_variable_values' of archive object.
+        """
+        self.scene = filename.split('_')[0]
         # just from beginning up to variable 'FC' is considered, thus it is [:11] in line below
-        names_polygon_codes = fil['polygon_codes'][0].split(";")[:11]
+        self.names_polygon_codes = fil['polygon_codes'][0].split(";")[:11]
+        self.polygon_ids = np.ma.getdata(fil["polygon_icechart"])
         map_id_to_variable_values = {}  # initialization
         # this dictionary has the ID as key and the corresponding values
         # as a list at the 'value postion' of that key in the dictionary.
         for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
             id_val_splitted = id_and_corresponding_variable_values.split(";")
             map_id_to_variable_values.update({int(id_val_splitted[0]): id_val_splitted[1:]})
-        polygon_ids = np.ma.getdata(fil["polygon_icechart"])
 
-        self.polygon_ids = polygon_ids
         self.map_id_to_variable_values = map_id_to_variable_values
-        self.names_polygon_codes = names_polygon_codes
-        self.scene = scene
 
     @staticmethod
-    def get_the_mask_of_sar_data(sar_names, fil, distance_threshold):
+    def get_the_mask_of_sar_size_data(sar_names, fil, distance_threshold):
         for str_ in sar_names+['polygon_icechart']:
             mask = np.ma.getmaskarray(fil[str_][:])
             mask = np.ma.mask_or(mask, mask)
@@ -136,7 +149,7 @@ class archive():
         return mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1
 
     @staticmethod
-    def padding(mask_amsr, mask_sar_size):
+    def pad_the_mask_of_sar_based_on_size_amsr(mask_amsr, mask_sar_size):
         # the difference between 'amsr repeated mask' and sar size mask must be padded in order to
         # centralize the scene for both sizes and having the same shape of masks
         pad_width = mask_amsr.shape[1]-mask_sar_size.shape[1]
@@ -201,23 +214,29 @@ class archive():
         final_ful_mask:
         final_mask_with_amsr2_size: final_ful_mask with amsr2 shape
         pads: used pads for making two images size (coming from sar and amsr2) be at the same number
-        of pixels
+        of pixels.
         """
         # 1. get the mask of sar data
-        mask_sar_size = self.get_the_mask_of_sar_data(self.SAR_NAMES, fil, self.DISTANCE_THRESHOLD)
+        mask_sar_size = self.get_the_mask_of_sar_size_data(self.SAR_NAMES, fil,
+                                                           self.DISTANCE_THRESHOLD)
         # 2. get the mask of amsr2 data
         mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1 = self.get_the_mask_of_amsr2_data(
                                                                               self.AMSR_LABELS, fil)
-        mask_sar_size, self.pads = self.padding(mask_amsr, mask_sar_size)
+        mask_sar_size, self.pads = self.pad_the_mask_of_sar_based_on_size_amsr(mask_amsr,
+                                                                               mask_sar_size)
         # 3. final mask based on two masks
         self.final_ful_mask = np.ma.mask_or(mask_sar_size, mask_amsr)  # combination of masks
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
-            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
-        )
+                                           self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
+                                           )
 
     def calculate_variable_ML(self, switch):
         """
-        This function calculates the all types of data (based on the mask) and store them in "self.PROP"
+        This function calculates the all types of data (based on the mask) from "batches_array"
+        property of archive object and store them in
+        "self.PROP". Each element inside self.PROP is a list that contains slices of data for
+        different locations. Each slice belongs to a specific location that the corresponding mask
+        is not active (not TRUE) for that location.
         """
         converter = self.util[switch]["name_conventer"]
         astype = self.util[switch]["astype"]
@@ -234,22 +253,30 @@ class archive():
         del mask_batches_array
 
     def write_scene_files(self):
-        desired_variable_names = self.SAR_NAMES+self.AMSR_LABELS+self.names_polygon_codes[1:]
+        """
+        This function writes specific slice of desired variable names (that has been stored
+        previously in) self.PROP (that belongs to a specific location of scene) to a separate file.
+        The file contains all variables which belongs to that location.
+        """
+        desired_variable_names = self.SAR_NAMES + self.AMSR_LABELS + self.names_polygon_codes[1:]
         # removing dot from the name of variable
         desired_variable_names = [x.replace(".", "_") for x in desired_variable_names]
         # loop for saving each batch of separately in each file.
         # This way, it is compatible with the generator
         # code explained in link below
         # https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-        for i in range(len(self.PROP['CT'])):
+        for slice_ in range(len(self.PROP['CT'])):
             # the len is equal for both sizes of input as well as the output data. Here 'CT'
             # variable is selected as one of them in the for loop.
             dict_for_saving = {}
             for name_without_dot in desired_variable_names:
                 dict_for_saving.update(
-                    {name_without_dot: self.PROP[name_without_dot][i]})
+                    {name_without_dot: self.PROP[name_without_dot][slice_]}
+                    )
             np.savez(
-                f"{os.path.join(self.OUTPATH,self.scene)}_{i:0>6}_{self.NERSC}", **dict_for_saving)
+                f"{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}",
+                **dict_for_saving
+                )
         del dict_for_saving, self.final_ful_mask, self.final_mask_with_amsr2_size
         del self.PROP
         self.PROP = {}
@@ -264,34 +291,39 @@ class archive():
     def calculate_batches_for_masks(self):
         self.mask_batches = self.view_as_windows_for_sar_size(self.final_ful_mask)
         self.mask_batches_amsr2 = self.view_as_windows_for_amsr2_size(
-            self.final_mask_with_amsr2_size)
+            self.final_mask_with_amsr2_size
+            )
 
     def pad_and_batch(self, fil, switch):
         """
-        This function calculates the output matrix and store them in "batches_array"
+        This function calculates the output matrix and store them in "batches_array" property of obj.
         """
         self.util[switch]["batches_array"] = {}
-        for name in self.util[switch]["loop_list"]:
-            values_array = np.ma.getdata(fil[self.util[switch]["getdata"](name)])
+        for element in self.util[switch]["loop_list"]:
+            values_array = np.ma.getdata(fil[self.util[switch]["name_for_getdata"](element)])
             values_array = self.util[switch]["pading"](values_array)
-            values_array = self.util[switch]["covert"](values_array, name)
+            values_array = self.util[switch]["convert"](values_array, element)
             self.util[switch]["batches_array"].update(
             {
-            self.util[switch]["name_conventer"](name): self.util[switch]["win_func"](values_array)
+            self.util[switch]["name_conventer"](element): self.util[switch]["win_func"](values_array)
             }
             )
 
     def pading(self, values_array, astype, constant_value):
+        """ pad based on self.pads and constant_value """
         (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
-        values_array = np.pad(
-            values_array, ((pad_hight_up, pad_hight_down),
-                           (pad_width_west, pad_width_east)),
-            'constant', constant_values=(constant_value, constant_value)).astype(astype)
+        values_array = np.pad( values_array, ((pad_hight_up, pad_hight_down),
+                                              (pad_width_west, pad_width_east)),
+                        'constant', constant_values=(constant_value, constant_value)).astype(astype)
         return values_array
 
-    def convert_variables(self, values_array, i):
+    def convert_variables(self, values_array, element):
+        """
+        based on 'self.map_id_to_variable_values', all the values are converted to correct values
+        of the very variable based on polygon ID values in each location in 2d array of values_array
+        """
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
             # each loop changes all locations of values_array (that have the very
             # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            values_array[values_array == id_value] = np.byte(variable_belong_to_id[i])
+            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
         return values_array
