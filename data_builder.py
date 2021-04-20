@@ -10,37 +10,48 @@ from archive import Archive
 
 
 def read_input_params():
+    ASPECT_RATIO = 50
+    def type_for_stride_and_window_size(str_):
+        if int(str_)%ASPECT_RATIO:
+            parser.error(f"Both stride and window size must be dividable to {ASPECT_RATIO}")
+        return int(str_)
+    def type_for_nersc_noise(str_):
+        if not (str_=="" or str_=="nersc_"):
+            parser.error("'--noise_method' MUST be '' or 'nersc_'.")
+        return str_
     parser = argparse.ArgumentParser(description='Process the arguments of script')
     parser.add_argument(
-        '-in', '--input_source_path', required=True, type=str,
-        help="Absolute path for input folder that contains all files")
+        'input_dir', type=str, help="Path to directory with input netCDF files")
     parser.add_argument(
-        '-out', '--output_destination_path', required=True, type=str,
-        help="Absolute path for output folder that storage of all files after processing")
+        '-o','--output_dir', type=str, required=False,
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
+        help="Path to directory with output files",)
     parser.add_argument(
-        '-ne', '--nersc_error_flag', required=True, type=str,
-        help="the method that error calculation had been used for error")
+        '-n', '--noise_method', required=False, type=type_for_nersc_noise,default="nersc_",
+        help="the method that error calculation had been used for error.Leave as empty string '' for"
+                    "ESA noise corrections or as 'nersc_' for the Nansen center noise correction.")
     parser.add_argument(
-        '-ws', '--window_size', required=True, type=int,
-        help="window_size for batching calculation")
+        '-w', '--window_size', required=False, type=type_for_stride_and_window_size,default=700,
+        help="window size for batching calculation(must be dividable to 50)")
     parser.add_argument(
-        '-s', '--stride', required=True, type=int,
-        help="stride for batching calculation")
+        '-s', '--stride', required=False, type=type_for_stride_and_window_size,default=700,
+        help="stride for batching calculation(must be dividable to 50)")
     parser.add_argument(
-        '--rm_swath', required=True, type=int,
-        help="rm_swath")
+        '-r','--rm_swath', required=False, type=int,default=0,
+        help="threshold value for comparison with file.aoi_upperleft_sample to border the calculation")
     parser.add_argument(
-        '-dt','--distance_threshold', required=True, type=int,
+        '-d','--distance_threshold', required=False, type=int,default=0,
         help="threshold for distance from land in mask calculation")
     arg = parser.parse_args()
-    window_size_amsr2 = (arg.window_size, arg.window_size)
-    stride_ams2_size = arg.stride
+    window_size_amsr2 = (arg.window_size // ASPECT_RATIO, arg.window_size // ASPECT_RATIO)
+    stride_ams2_size = arg.stride // ASPECT_RATIO
+    window_size = (arg.window_size, arg.window_size)
+    stride_sar_size = arg.window_size
     rm_swath = arg.rm_swath
     distance_threshold = arg.distance_threshold
-    datapath = arg.input_source_path
-    outpath = arg.output_destination_path
-    nersc = arg.nersc_error_flag  # Leave as empty string '' for ESA noise corrections
-                                  # or as 'nersc_' for the Nansen center noise correction.
+    datapath = arg.input_dir
+    outpath = arg.output_dir
+    nersc = arg.noise_method
     amsr_labels = [
         "btemp_6.9h",
         "btemp_6.9v",
@@ -57,8 +68,6 @@ def read_input_params():
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-    window_size = (window_size_amsr2[0] * 50, window_size_amsr2[1] * 50)
-    stride_sar_size = stride_ams2_size * 50
 
     sar_names = [nersc + "sar_primary", nersc + "sar_secondary"]
     if not os.path.exists(outpath):
