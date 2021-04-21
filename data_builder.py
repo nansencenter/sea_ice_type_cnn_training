@@ -6,7 +6,7 @@ import netCDF4 as nc
 import numpy as np
 from skimage.util.shape import view_as_windows
 
-from archive import Archive
+from archive import Archive, SarBatches, OutputBatches, Amsr2Batches
 
 
 def read_input_params():
@@ -99,13 +99,14 @@ def main():
             archive_.read_icechart_coding(fil, filename)
             archive_.calculate_mask(fil)
             archive_.calculate_batches_for_masks()
-            archive_.define_util()
-            for switch in ["sar","output","amsr2"]:
-                archive_.pad_and_batch(fil,switch)
-                archive_.calculate_variable_ML(switch)
-
+            for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
+                obj = cls_(archive_)
+                obj.pad_and_batch(fil)
+                archive_.PROP.update(obj.calculate_variable_ML())
+                del obj
+            del archive_.mask_batches_amsr2, archive_.mask_batches
             # saving section
-            archive_.write_scene_files()
+            archive_.write_scene_files_and_reset_archive_PROP()
             archive_.update_processed_files(i)
         del fil
 
