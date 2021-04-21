@@ -48,38 +48,38 @@ class Batches:
 
 class SarBatches(Batches):
     def __init__(self,archive_):
-        setattr(self, 'name_conventer', lambda name: name)
+        self.name_conventer = lambda name: name
         self.loop_list = archive_.SAR_NAMES
         self.astype = np.float32
         self.batches_mask = archive_.mask_batches
-        setattr(self, 'name_for_getdata', lambda name: name)
-        setattr(self, 'pading', lambda x: archive_.pading(x, np.float32, None))
-        setattr(self, 'convert', lambda values_array, element: values_array)
-        setattr(self, 'win_func', lambda array: archive_.view_as_windows_for_sar_size(array))
+        self.name_for_getdata = lambda name: name
+        self.pading = lambda x: archive_.pading(x, np.float32, None)
+        self.convert = lambda values_array, element: values_array
+        self.win_func = lambda array: archive_.view_as_windows_for_sar_size(array)
 
 
 class OutputBatches(SarBatches):
     def __init__(self,archive_):
         super().__init__(archive_)
-        setattr(self, 'name_conventer', lambda name: archive_.names_polygon_codes[name+1])
+        self.name_conventer = lambda name: archive_.names_polygon_codes[name+1]
         self.loop_list = list(range(10))
         self.astype = np.byte
-        setattr(self, 'name_for_getdata', lambda name: "polygon_icechart")
-        setattr(self, 'pading', lambda x: archive_.pading(x, np.byte, 0))
-        setattr(self, 'convert', lambda values_array, element: archive_.encode_icechart(
-                                                                            values_array, element))
+        self.name_for_getdata = lambda name: "polygon_icechart"
+        self.pading = lambda x: archive_.pading(x, np.byte, 0)
+        self.convert = lambda values_array, element: archive_.encode_icechart(
+                                                                            values_array, element)
 
 
 class Amsr2Batches(Batches):
     def __init__(self,archive_):
-        setattr(self, 'name_conventer', lambda name: name.replace(".", "_"))
+        self.name_conventer = lambda name: name.replace(".", "_")
         self.loop_list = archive_.AMSR_LABELS
         self.astype = np.float32
         self.batches_mask = archive_.mask_batches_amsr2
-        setattr(self, 'name_for_getdata', lambda name: name)
-        setattr(self, 'pading', lambda x: x)
-        setattr(self, 'convert', lambda values_array, element: values_array)
-        setattr(self, 'win_func', lambda array: archive_.view_as_windows_for_amsr2_size(array))
+        self.name_for_getdata = lambda name: name
+        self.pading = lambda x: x
+        self.convert = lambda values_array, element: values_array
+        self.win_func = lambda array: archive_.view_as_windows_for_amsr2_size(array)
 
 
 class Archive():
