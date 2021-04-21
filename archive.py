@@ -9,6 +9,37 @@ class Batches:
     parent class for storing the common methods of SarBatches, OutputBatches,and Amsr2Batches
     classes.
     """
+    def view_as_windows(self, array):
+        return view_as_windows(array, self.WINDOW_SIZE, self.STRIDE)
+
+    def name_conventer(self, name):
+        return name
+
+    def name_for_getdata(self, name):
+        return name
+
+    def convert(self, values_array, element):
+        return values_array
+
+    def calculate_pading(self, values_array, astype, constant_value):
+        """ pad based on self.pads and constant_value """
+        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
+        values_array = np.pad( values_array, ((pad_hight_up, pad_hight_down),
+                                              (pad_width_west, pad_width_east)),
+                        'constant', constant_values=(constant_value, constant_value)).astype(astype)
+        return values_array
+
+    def encode_icechart(self, values_array, element):
+        """
+        based on 'self.map_id_to_variable_values', all the values are converted to correct values
+        of the very variable based on polygon ID values in each location in 2d array of values_array
+        """
+        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
+            # each loop changes all locations of values_array (that have the very
+            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
+            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
+        return values_array
+
     def pad_and_batch(self, fil):
         """
         This function calculates the output matrix and store them in "batches_array" property of obj.
@@ -20,7 +51,7 @@ class Batches:
             values_array = self.convert(values_array, element)
             self.batches_array.update(
             {
-            self.name_conventer(element): self.win_func(values_array)
+            self.name_conventer(element): self.view_as_windows(values_array)
             }
             )
 
@@ -32,15 +63,15 @@ class Batches:
         different locations. Each slice belongs to a specific location that the corresponding mask
         is not active (not TRUE) for that location.
         """
-        nconv = self.name_conventer
         PROP={}
         for element in self.loop_list:
+            key = self.name_conventer(element)
             # initiation of the array
             template = []
-            for ix, iy in np.ndindex(self.batches_array[nconv(element)].shape[:2]):
+            for ix, iy in np.ndindex(self.batches_array[key].shape[:2]):
                 if (~self.batches_mask[ix, iy]).all():
-                    template.append(self.batches_array[nconv(element)][ix, iy].astype(self.astype))
-            PROP.update({nconv(element): template})
+                    template.append(self.batches_array[key][ix, iy].astype(self.astype))
+            PROP.update({key: template})
         del self.batches_array
         del template
         return PROP
@@ -48,38 +79,54 @@ class Batches:
 
 class SarBatches(Batches):
     def __init__(self,archive_):
-        self.name_conventer = lambda name: name
         self.loop_list = archive_.SAR_NAMES
         self.astype = np.float32
+        self.pads = archive_.pads
         self.batches_mask = archive_.mask_batches
-        self.name_for_getdata = lambda name: name
-        self.pading = lambda x: archive_.pading(x, np.float32, None)
-        self.convert = lambda values_array, element: values_array
-        self.win_func = lambda array: archive_.view_as_windows_for_sar_size(array)
+        self.WINDOW_SIZE = archive_.WINDOW_SIZE
+        self.STRIDE = archive_.STRIDE_SAR_SIZE
+
+    def pading(self, values_array):
+        return self.calculate_pading(values_array, np.float32, None)
+
+    def convert(self, values_array, element):
+        return values_array
 
 
 class OutputBatches(SarBatches):
     def __init__(self,archive_):
         super().__init__(archive_)
-        self.name_conventer = lambda name: archive_.names_polygon_codes[name+1]
+        self.map_id_to_variable_values = archive_.map_id_to_variable_values
+        self.names_polygon_codes = archive_.names_polygon_codes
         self.loop_list = list(range(10))
         self.astype = np.byte
-        self.name_for_getdata = lambda name: "polygon_icechart"
-        self.pading = lambda x: archive_.pading(x, np.byte, 0)
-        self.convert = lambda values_array, element: archive_.encode_icechart(
-                                                                            values_array, element)
+
+    def name_conventer(self, name):
+        return self.names_polygon_codes[name+1]
+
+    def name_for_getdata(self, name):
+        return "polygon_icechart"
+
+    def pading(self, values_array):
+        return self.calculate_pading(values_array, np.byte, 0)
+
+    def convert(self, values_array, element):
+        return self.encode_icechart(values_array, element)
 
 
 class Amsr2Batches(Batches):
     def __init__(self,archive_):
-        self.name_conventer = lambda name: name.replace(".", "_")
         self.loop_list = archive_.AMSR_LABELS
         self.astype = np.float32
         self.batches_mask = archive_.mask_batches_amsr2
-        self.name_for_getdata = lambda name: name
-        self.pading = lambda x: x
-        self.convert = lambda values_array, element: values_array
-        self.win_func = lambda array: archive_.view_as_windows_for_amsr2_size(array)
+        self.WINDOW_SIZE = archive_.WINDOW_SIZE_AMSR2
+        self.STRIDE = archive_.STRIDE_AMS2_SIZE
+
+    def name_conventer(self, name):
+        return name.replace(".", "_")
+
+    def pading(self, x):
+        return x
 
 
 class Archive():
@@ -300,32 +347,7 @@ class Archive():
         self.PROP = {}
 
     def calculate_batches_for_masks(self):
-        self.mask_batches = self.view_as_windows_for_sar_size(self.final_ful_mask)
-        self.mask_batches_amsr2 = self.view_as_windows_for_amsr2_size(
-            self.final_mask_with_amsr2_size
-            )
-
-    def view_as_windows_for_sar_size(self, array):
-        return view_as_windows(array, self.WINDOW_SIZE, self.STRIDE_SAR_SIZE)
-
-    def view_as_windows_for_amsr2_size(self, array):
-        return view_as_windows(array, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
-
-    def pading(self, values_array, astype, constant_value):
-        """ pad based on self.pads and constant_value """
-        (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
-        values_array = np.pad( values_array, ((pad_hight_up, pad_hight_down),
-                                              (pad_width_west, pad_width_east)),
-                        'constant', constant_values=(constant_value, constant_value)).astype(astype)
-        return values_array
-
-    def encode_icechart(self, values_array, element):
-        """
-        based on 'self.map_id_to_variable_values', all the values are converted to correct values
-        of the very variable based on polygon ID values in each location in 2d array of values_array
-        """
-        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            # each loop changes all locations of values_array (that have the very
-            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
-        return values_array
+        self.mask_batches = view_as_windows(self.final_ful_mask, self.WINDOW_SIZE,
+                                            self.STRIDE_SAR_SIZE)
+        self.mask_batches_amsr2 = view_as_windows(
+                    self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
