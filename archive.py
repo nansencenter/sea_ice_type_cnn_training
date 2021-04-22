@@ -33,9 +33,17 @@ class Batches:
 
     def resize(self, batches_array):
         if batches_array.shape[0] % self.step:
-            return uniform_filter(batches_array, size=(self.step,self.step), origin=(-(self.step//2),-(self.step//2)))[::self.step,::self.step][:-1,:-1]
+            return uniform_filter(
+                batches_array,
+                size=(self.step,self.step),
+                origin=(-(self.step//2),-(self.step//2))
+                )[::self.step,::self.step][:-1,:-1]
         else:
-            return uniform_filter(batches_array, size=(self.step,self.step), origin=(-(self.step//2),-(self.step//2)))[::self.step,::self.step]
+            return uniform_filter(
+                batches_array,
+                size=(self.step,self.step),
+                origin=(-(self.step//2),-(self.step//2))
+                )[::self.step,::self.step]
 
     def encode_icechart(self, values_array, element):
         """
