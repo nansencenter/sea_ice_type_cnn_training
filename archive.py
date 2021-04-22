@@ -23,6 +23,16 @@ class Batches:
     def convert(self, values_array, element):
         return values_array
 
+    def resize(self, array):
+        """This function resize the values of pixel of 'batches_array' with the windows of
+        size 'self.step' by slicing it."""
+        array = array[::self.step, ::self.step]
+        if array.shape[0] % self.step:
+            # in the case of image size is not being dividable to the "step" value,the value at
+            # the end is omitted.
+            array = array[:-1, :-1]
+        return array
+
     def calculate_pading(self, values_array, astype, constant_value):
         """ pad based on self.pads and constant_value """
         (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
@@ -91,17 +101,12 @@ class SarBatches(Batches):
         for more information look at:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.uniform_filter.html
         """
-        sliced_filter_result = uniform_filter(
-                batches_array,
-                size=(self.step,self.step),
-                origin=(-(self.step//2),-(self.step//2))
-                )[::self.step,::self.step]
-        if batches_array.shape[0] % self.step:
-            # in the case of image size is not being dividable to the "step" value,garbage value at
-            # the end is omitted.
-            return sliced_filter_result[:-1,:-1]
-        else:
-            return sliced_filter_result
+        batches_array = uniform_filter(
+                                        batches_array,
+                                        size=(self.step,self.step),
+                                        origin=(-(self.step//2),-(self.step//2))
+                                        )
+        return super().resize(batches_array)
 
 
 class OutputBatches(SarBatches):
@@ -137,9 +142,7 @@ class OutputBatches(SarBatches):
         return values_array
 
     def resize(self, batches_array):
-        """This function resize the values of pixel of 'batches_array' with the windows of
-        size 'self.step' by slicing it."""
-        return batches_array[::self.step, ::self.step]
+        return Batches.resize(self, batches_array)
 
 
 class Amsr2Batches(Batches):
