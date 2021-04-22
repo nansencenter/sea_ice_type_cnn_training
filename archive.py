@@ -103,6 +103,7 @@ class SarBatches(Batches):
         else:
             return sliced_filter_result
 
+
 class OutputBatches(SarBatches):
     def __init__(self,archive_):
         super().__init__(archive_)
