@@ -31,30 +31,9 @@ class Batches:
                         'constant', constant_values=(constant_value, constant_value)).astype(astype)
         return values_array
 
-    def resize(self, batches_array):
-        if batches_array.shape[0] % self.step:
-            return uniform_filter(
-                batches_array,
-                size=(self.step,self.step),
-                origin=(-(self.step//2),-(self.step//2))
-                )[::self.step,::self.step][:-1,:-1]
-        else:
-            return uniform_filter(
-                batches_array,
-                size=(self.step,self.step),
-                origin=(-(self.step//2),-(self.step//2))
-                )[::self.step,::self.step]
 
-    def encode_icechart(self, values_array, element):
-        """
-        based on 'self.map_id_to_variable_values', all the values are converted to correct values
-        of the very variable based on polygon ID values in each location in 2d array of values_array
-        """
-        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            # each loop changes all locations of values_array (that have the very
-            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
-        return values_array
+
+
 
     def pad_and_batch(self, fil):
         """
@@ -109,6 +88,24 @@ class SarBatches(Batches):
     def convert(self, values_array, element):
         return values_array
 
+    def resize(self, batches_array):
+        """This function averages the values of pixel of 'batches_array' with the windows of
+        size 'self.step' by the help of uniform_filter of scipy. Next step of calculation is slicing
+        in order to get rid of values that are belong to overlapping area in the filter result.
+        for more information look at:
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.uniform_filter.html
+        """
+        sliced_filter_result = uniform_filter(
+                batches_array,
+                size=(self.step,self.step),
+                origin=(-(self.step//2),-(self.step//2))
+                )[::self.step,::self.step]
+        if batches_array.shape[0] % self.step:
+            # in the case of image size is not being dividable to the "step" value,garbage value at
+            # the end is omitted.
+            return sliced_filter_result[:-1,:-1]
+        else:
+            return sliced_filter_result
 
 class OutputBatches(SarBatches):
     def __init__(self,archive_):
@@ -130,6 +127,22 @@ class OutputBatches(SarBatches):
 
     def convert(self, values_array, element):
         return self.encode_icechart(values_array, element)
+
+    def encode_icechart(self, values_array, element):
+        """
+        based on 'self.map_id_to_variable_values', all the values are converted to correct values
+        of the very variable based on polygon ID values in each location in 2d array of values_array
+        """
+        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
+            # each loop changes all locations of values_array (that have the very
+            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
+            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
+        return values_array
+
+    def resize(self, batches_array):
+        """This function resize the values of pixel of 'batches_array' with the windows of
+        size 'self.step' by slicing it."""
+        return batches_array[::self.step, ::self.step]
 
 
 class Amsr2Batches(Batches):
