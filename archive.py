@@ -57,7 +57,6 @@ class Batches:
             values_array = np.ma.getdata(fil[self.name_for_getdata(element)])
             values_array = self.pading(values_array)
             values_array = self.convert(values_array, element)
-            #resize
             self.batches_array.update(
             {
             self.name_conventer(element): self.view_as_windows(values_array)
@@ -123,7 +122,6 @@ class OutputBatches(SarBatches):
 
     def convert(self, values_array, element):
         return self.encode_icechart(values_array, element)
-
 
 
 class Amsr2Batches(Batches):
