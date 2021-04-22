@@ -42,6 +42,12 @@ def read_input_params():
     parser.add_argument(
         '-d','--distance_threshold', required=False, type=int,default=0,
         help="threshold for distance from land in mask calculation")
+    parser.add_argument(
+        '-a','--step_resolution_sar', required=False, type=int,default=1,
+        help="step for resizing the sar data")
+    parser.add_argument(
+        '-b','--step_resolution_output', required=False, type=int,default=1,
+        help="step for resizing the output variables")
     arg = parser.parse_args()
     window_size_amsr2 = (arg.window_size // ASPECT_RATIO, arg.window_size // ASPECT_RATIO)
     stride_ams2_size = arg.stride // ASPECT_RATIO
@@ -52,6 +58,8 @@ def read_input_params():
     datapath = arg.input_dir
     outpath = arg.output_dir
     nersc = arg.noise_method
+    step_sar = arg.step_resolution_sar
+    step_output = arg.step_resolution_output
     amsr_labels = [
         "btemp_6.9h",
         "btemp_6.9v",
@@ -84,6 +92,8 @@ def read_input_params():
         rm_swath,
         outpath,
         datapath,
+        step_sar,
+        step_output
     )
     return archive_
 

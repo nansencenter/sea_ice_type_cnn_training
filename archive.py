@@ -3,6 +3,8 @@ from json import dump, load
 
 import numpy as np
 from skimage.util.shape import view_as_windows
+from scipy.ndimage import uniform_filter
+
 
 class Batches:
     """
@@ -21,23 +23,22 @@ class Batches:
     def convert(self, values_array, element):
         return values_array
 
+    def resize(self, array):
+        """This function resize the values of pixel of 'batches_array' with the windows of
+        size 'self.step' by slicing it."""
+        array = array[::self.step, ::self.step]
+        if array.shape[0] % self.step:
+            # in the case of image size is not being dividable to the "step" value,the value at
+            # the end is omitted.
+            array = array[:-1, :-1]
+        return array
+
     def calculate_pading(self, values_array, astype, constant_value):
         """ pad based on self.pads and constant_value """
         (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
         values_array = np.pad( values_array, ((pad_hight_up, pad_hight_down),
                                               (pad_width_west, pad_width_east)),
                         'constant', constant_values=(constant_value, constant_value)).astype(astype)
-        return values_array
-
-    def encode_icechart(self, values_array, element):
-        """
-        based on 'self.map_id_to_variable_values', all the values are converted to correct values
-        of the very variable based on polygon ID values in each location in 2d array of values_array
-        """
-        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            # each loop changes all locations of values_array (that have the very
-            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
         return values_array
 
     def pad_and_batch(self, fil):
@@ -70,7 +71,7 @@ class Batches:
             template = []
             for ix, iy in np.ndindex(self.batches_array[key].shape[:2]):
                 if (~self.batches_mask[ix, iy]).all():
-                    template.append(self.batches_array[key][ix, iy].astype(self.astype))
+                    template.append(self.resize(self.batches_array[key][ix, iy]).astype(self.astype))
             PROP.update({key: template})
         del self.batches_array
         del template
@@ -85,12 +86,27 @@ class SarBatches(Batches):
         self.batches_mask = archive_.mask_batches
         self.WINDOW_SIZE = archive_.WINDOW_SIZE
         self.STRIDE = archive_.STRIDE_SAR_SIZE
+        self.step = archive_.step_sar
 
     def pading(self, values_array):
         return self.calculate_pading(values_array, np.float32, None)
 
     def convert(self, values_array, element):
         return values_array
+
+    def resize(self, batches_array):
+        """This function averages the values of pixel of 'batches_array' with the windows of
+        size 'self.step' by the help of uniform_filter of scipy. Next step of calculation is slicing
+        in order to get rid of values that are belong to overlapping area in the filter result.
+        for more information look at:
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.uniform_filter.html
+        """
+        batches_array = uniform_filter(
+                                        batches_array,
+                                        size=(self.step,self.step),
+                                        origin=(-(self.step//2),-(self.step//2))
+                                        )
+        return super().resize(batches_array)
 
 
 class OutputBatches(SarBatches):
@@ -100,6 +116,7 @@ class OutputBatches(SarBatches):
         self.names_polygon_codes = archive_.names_polygon_codes
         self.loop_list = list(range(10))
         self.astype = np.byte
+        self.step = archive_.step_output
 
     def name_conventer(self, name):
         return self.names_polygon_codes[name+1]
@@ -112,6 +129,20 @@ class OutputBatches(SarBatches):
 
     def convert(self, values_array, element):
         return self.encode_icechart(values_array, element)
+
+    def encode_icechart(self, values_array, element):
+        """
+        based on 'self.map_id_to_variable_values', all the values are converted to correct values
+        of the very variable based on polygon ID values in each location in 2d array of values_array
+        """
+        for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
+            # each loop changes all locations of values_array (that have the very
+            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
+            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
+        return values_array
+
+    def resize(self, batches_array):
+        return Batches.resize(self, batches_array)
 
 
 class Amsr2Batches(Batches):
@@ -128,10 +159,14 @@ class Amsr2Batches(Batches):
     def pading(self, x):
         return x
 
+    def resize(self, x):
+        return x
+
 
 class Archive():
     def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
-                 window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath):
+                 window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath,
+                step_sar, step_output):
         self.SAR_NAMES = sar_names
         self.NERSC = nersc
         self.STRIDE_SAR_SIZE = stride_sar_size
@@ -143,6 +178,8 @@ class Archive():
         self.RM_SWATH = rm_swath
         self.OUTPATH = outpath
         self.DATAPATH = datapath
+        self.step_sar = step_sar
+        self.step_output = step_output
         self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
                       # different locations.
 
