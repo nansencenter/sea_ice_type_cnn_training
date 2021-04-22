@@ -31,10 +31,6 @@ class Batches:
                         'constant', constant_values=(constant_value, constant_value)).astype(astype)
         return values_array
 
-
-
-
-
     def pad_and_batch(self, fil):
         """
         This function calculates the output matrix and store them in "batches_array" property of obj.
