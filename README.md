@@ -24,7 +24,7 @@ The output address as well as some other parameters for this process is configur
 | ------------------- | --------------------|-------------- | --------------
 |  []                 |  []                 |  [no default]| The first and the only positional argument is the path to directory with input netCDF files needed for data building
 |  -o                 |  --output_dir       | same path of `data_builder.py` file      |Path to directory with output files
-|  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error.Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
+|  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error. Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
 |  -w                 |   --window_size     |  700 | window size (of sar and ice chart data) for batching calculation (must be dividable to 50)(This will be the size of image samples that has been used for ML training step)
 |  -s                 |   --stride          |  700 | stride (of sar and ice chart data) for batching calculation (must be dividable to 50)(This will be the stride that determines the overlapping areas between image samples for ML training step)
 |  -r                 |   --rm_swath        |  0    |threshold value for comparison with netCDF file.aoi_upperleft_sample to border the calculation
