@@ -41,7 +41,6 @@ params = {'dims_input': (*dims_input, 1),
             'output_var_name':output_var_name,
             'input_var_name':input_var_name,
           'batch_size': 4,
-          'n_channels': 1,
           'shuffle': True}
 
 #generators
@@ -70,9 +69,9 @@ model.summary()
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 # Train model on dataset
-model.fit_generator(generator=training_generator,
+model.fit(training_generator,
                     validation_data=validation_generator,
                     use_multiprocessing=True,
-                    workers=6,
-                    epochs=40,
+                    workers=4,
+                    epochs=6,
                     callbacks=[tensorboard_callback])
