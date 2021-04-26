@@ -1,6 +1,6 @@
 # description
 This data builder part of this repo (`data_builder.py`) provides the clean version of ASID v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
-
+### DISCLAIMER: This code project is released as it without guarentees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with convolutional neural networks.
 # Requirement
 just run the following command in your environment in order to install the requirements:
 
