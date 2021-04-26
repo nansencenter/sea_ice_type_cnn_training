@@ -31,12 +31,15 @@ print(f"total number of training samples: {len(train_sublist_id_list)}")
 print(f"total number of validation samples: {len(valid_sublist_id_list)}")
 # Datasets
 partition = {'train': train_sublist_id_list, 'validation': valid_sublist_id_list}
-
+input_var_name = 'nersc_sar_primary'
+output_var_name = 'CT'
 # Parameters
-dims_input = np.load('/workspaces/ASID-v2-builder/output/' + id_list[0]).get('nersc_sar_primary').shape
-dims_output = np.load('/workspaces/ASID-v2-builder/output/' + id_list[0]).get('CT').shape
+dims_input = np.load('/workspaces/ASID-v2-builder/output/' + id_list[0]).get(input_var_name).shape
+dims_output = np.load('/workspaces/ASID-v2-builder/output/' + id_list[0]).get(output_var_name).shape
 params = {'dims_input': (*dims_input, 1),
           'dims_output': (*dims_output, 1),
+            'output_var_name':output_var_name,
+            'input_var_name':input_var_name,
           'batch_size': 4,
           'n_channels': 1,
           'shuffle': True}

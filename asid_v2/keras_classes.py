@@ -3,15 +3,15 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, batch_size, dims_input, dims_output, n_channels=1,
-                 n_classes=10, shuffle=True):
+    def __init__(self, list_IDs, batch_size, dims_input, dims_output,output_var_name,
+                input_var_name, shuffle=True):
         'Initialization'
         self.dims_input = dims_input
         self.dims_output = dims_output
         self.batch_size = batch_size
         self.list_IDs = list_IDs
-        self.n_channels = n_channels
-        self.n_classes = n_classes
+        self.input_var_name = input_var_name
+        self.output_var_name = output_var_name
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -47,6 +47,6 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
 
-            X[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get('nersc_sar_primary')
-            y[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get('CT')
+            X[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get(self.input_var_name)
+            y[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get(self.output_var_name)/100
         return X, y
