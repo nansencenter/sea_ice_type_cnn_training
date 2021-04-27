@@ -7,7 +7,7 @@ just run the following command in your environment in order to install the requi
 `pip install -r requirements.txt`
 
 The users of Microsoft VScode can easily open the remote development container with the help of `.devcontainer` folder and Dockerfile
-# Execut the data building
+# Execute the data building
 By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASID data, this code is able to bluid the data based on those files and make them ready for further Machine learning training activities.
 
 This can be done writing this command:
