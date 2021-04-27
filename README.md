@@ -42,4 +42,8 @@ As an example for the case of building data from **/fold1** folder and store the
 After building the data, you can train the tensorflow model with those `.npz` files as the result of
 data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder from pervious calcultion (data building) to the `mypath` variable in the script.
 
+> It is strongly recommend to read the link below before using this part of the code because everything(including the classes and script) is developed based on explantion of this web page:
+https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
+
+
 If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the begning of the year for reading data between them.
