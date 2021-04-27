@@ -36,3 +36,10 @@ The output address as well as some other parameters for this process is configur
 As an example for the case of building data from **/fold1** folder and store them in **/fold2** folder with nersc noise calculation and having window size and stride of **400**, the command below is used:
 
 `python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400`
+
+
+# Execut the tensorflow training
+After building the data, you can train the tensorflow model with those `.npz` files as the result of
+data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder from pervious calcultion (data building) to the `mypath` variable in the script.
+
+If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the begning of the year for reading data between them.
