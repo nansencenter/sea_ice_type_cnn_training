@@ -38,11 +38,11 @@ As an example for the case of building data from **/fold1** folder and store the
 `python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400`
 
 
-# Execut the tensorflow training
+# Execute the tensorflow training
 After building the data, you can train the tensorflow model with those `.npz` files as the result of
 data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder from pervious calcultion (data building) to the `mypath` variable in the script.
 
-> It is strongly recommend to read the link below before using this part of the code because everything(including the classes and script) is developed based on explantion of this web page:
+> It is strongly recommend to read the link below before using this part of the code because everything (including the classes and script) is developed based on explantion of this web page:
 https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
 
