@@ -4,7 +4,7 @@ import keras
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_IDs, batch_size, dims_input, dims_output,dims_amsr2, output_var_name,
-                input_var_name, amsr2_var_name, shuffle=True):
+                input_var_name, amsr2_var_names, shuffle=True):
         'Initialization'
         self.dims_input = dims_input
         self.dims_output = dims_output
@@ -13,7 +13,7 @@ class DataGenerator(keras.utils.Sequence):
         self.list_IDs = list_IDs
         self.input_var_name = input_var_name
         self.output_var_name = output_var_name
-        self.amsr2_var_name = amsr2_var_name
+        self.amsr2_var_names = amsr2_var_names
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -49,8 +49,8 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-
-            X[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get(self.input_var_name)
-            z[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get(self.amsr2_var_name)
-            y[i,:,:,0] = np.load('/workspaces/ASID-v2-builder/output/' + ID ).get(self.output_var_name)/100
+            X[i,:,:,0] = np.load(ID).get(self.input_var_name)
+            y[i,:,:,0] = np.load(ID).get(self.output_var_name)/100
+            for j, amsr2_name in enumerate(self.amsr2_var_names):
+                z[i,:,:,j] = np.load(ID).get(amsr2_name)
         return [X,z], y
