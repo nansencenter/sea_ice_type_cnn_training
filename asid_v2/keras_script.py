@@ -29,18 +29,18 @@ print(f"total number of training samples: {len(train_sublist_id_list)}")
 print(f"total number of validation samples: {len(valid_sublist_id_list)}")
 # Datasets
 partition = {'train': train_sublist_id_list, 'validation': valid_sublist_id_list}
-input_var_name = 'nersc_sar_primary'
+input_var_names = ['nersc_sar_primary', 'nersc_sar_secondary']
 output_var_name = 'CT'
 amsr2_var_names = ['btemp_6_9h','btemp_6_9v']
 # obtaining the shape from the first sample of data
-dims_input = np.load(id_list[0]).get(input_var_name).shape
+dims_input = np.load(id_list[0]).get(input_var_names[0]).shape
 dims_output = np.load( id_list[0]).get(output_var_name).shape
 dims_amsr2 = np.load(id_list[0]).get(amsr2_var_names[0]).shape
-params = {'dims_input': (*dims_input, 1),
+params = {'dims_input': (*dims_input, len(input_var_names)),
           'dims_output': (*dims_output, 1),
           'dims_amsr2': (*dims_amsr2, len(amsr2_var_names)),
             'output_var_name':output_var_name,
-            'input_var_name':input_var_name,
+            'input_var_names':input_var_names,
             'amsr2_var_names':amsr2_var_names,
           'batch_size': 4,
           'shuffle': True}

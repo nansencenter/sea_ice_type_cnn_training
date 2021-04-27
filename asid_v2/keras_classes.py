@@ -4,14 +4,14 @@ import keras
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_IDs, batch_size, dims_input, dims_output,dims_amsr2, output_var_name,
-                input_var_name, amsr2_var_names, shuffle=True):
+                input_var_names, amsr2_var_names, shuffle=True):
         'Initialization'
         self.dims_input = dims_input
         self.dims_output = dims_output
         self.dims_amsr2 = dims_amsr2
         self.batch_size = batch_size
         self.list_IDs = list_IDs
-        self.input_var_name = input_var_name
+        self.input_var_names = input_var_names
         self.output_var_name = output_var_name
         self.amsr2_var_names = amsr2_var_names
         self.shuffle = shuffle
@@ -49,8 +49,9 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-            X[i,:,:,0] = np.load(ID).get(self.input_var_name)
             y[i,:,:,0] = np.load(ID).get(self.output_var_name)/100
+            for j, sar_name in enumerate(self.input_var_names):
+                X[i,:,:,j] = np.load(ID).get(sar_name)
             for j, amsr2_name in enumerate(self.amsr2_var_names):
                 z[i,:,:,j] = np.load(ID).get(amsr2_name)
         return [X,z], y
