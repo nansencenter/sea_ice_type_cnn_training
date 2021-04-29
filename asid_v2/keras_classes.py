@@ -3,8 +3,8 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, batch_size, dims_input, dims_output,dims_amsr2, output_var_name,
-                input_var_names, amsr2_var_names, shuffle=True):
+    def __init__(self, list_IDs,shuffle_on_epoch_end, batch_size, dims_input, dims_output,dims_amsr2,
+     output_var_name, input_var_names, amsr2_var_names):
         'Initialization'
         self.dims_input = dims_input
         self.dims_output = dims_output
@@ -14,7 +14,7 @@ class DataGenerator(keras.utils.Sequence):
         self.input_var_names = input_var_names
         self.output_var_name = output_var_name
         self.amsr2_var_names = amsr2_var_names
-        self.shuffle = shuffle
+        self.shuffle_on_epoch_end = shuffle_on_epoch_end
         self.on_epoch_end()
 
     def __len__(self):
@@ -37,7 +37,7 @@ class DataGenerator(keras.utils.Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle == True:
+        if self.shuffle_on_epoch_end:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
