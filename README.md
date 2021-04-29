@@ -3,9 +3,9 @@ This data builder part of this repo (`data_builder.py`) provides the clean versi
 ### DISCLAIMER: This code project is released as it without guarentees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with convolutional neural networks.
 The order of execution of different parts of the code is as follow:
  1. [Execute the data building](#requirement)
- 2. Execute the tensorflow training(#execute-the-data-building)
- 3. Execute the inference code
- 4. Plotting the result of inference
+ 2. [Execute the tensorflow training](#Execute-The-Data-Building)
+ 3. [Execute the inference code](#Execute-the-inference-code)
+ 4. [Plotting the result of inference](#Plotting-the-result-of-inference)
 
 # Requirement
 just run the following command in your environment in order to install the requirements:
