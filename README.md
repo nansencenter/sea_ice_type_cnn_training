@@ -1,5 +1,5 @@
 # description
-This data builder part of this repo (`data_builder.py`) provides the clean version of ASID v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
+This repository provides the facilities for ASID v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
 ### DISCLAIMER: This code project is released as it without guarentees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with convolutional neural networks.
 The order of execution of different parts of the code is as follow:
  1. [Execute the data building](#requirement)
@@ -14,7 +14,7 @@ just run the following command in your environment in order to install the requi
 
 The users of Microsoft VScode can easily open the remote development container with the help of `.devcontainer` folder and Dockerfile
 # Execute the data building
-By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASID data, this code is able to bluid the data based on those files and make them ready for further Machine learning training activities.
+By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASID data, data building part of code is able to bluid the data based on those files and make them ready for further Machine learning training activities.
 
 This can be done writing this command:
 
