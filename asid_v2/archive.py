@@ -69,10 +69,15 @@ class Batches:
             key = self.name_conventer(element)
             # initiation of the array
             template = []
+            locs =[]
             for ix, iy in np.ndindex(self.batches_array[key].shape[:2]):
                 if (~self.batches_mask[ix, iy]).all():
                     template.append(self.resize(self.batches_array[key][ix, iy]).astype(self.astype))
+                    if self.__class__.__name__ == "Amsr2Batches": # only for doing it once,not several times!(only for speed)
+                        locs.append((ix,iy))
             PROP.update({key: template})
+            PROP.update({"_locs": locs}) if locs else None
+
         del self.batches_array
         del template
         return PROP
@@ -360,7 +365,8 @@ class Archive():
         previously in) self.PROP (that belongs to a specific location of scene) to a separate file.
         The file contains all variables which belongs to that location.
         """
-        desired_variable_names = self.SAR_NAMES + self.AMSR_LABELS + self.names_polygon_codes[1:]
+        desired_variable_names = self.SAR_NAMES \
+                                 + self.AMSR_LABELS + self.names_polygon_codes[1:] + ["_locs"]
         # removing dot from the name of variable
         desired_variable_names = [x.replace(".", "_") for x in desired_variable_names]
         # loop for saving each batch of separately in each file.
@@ -376,7 +382,8 @@ class Archive():
                     {name_without_dot: self.PROP[name_without_dot][slice_]}
                     )
             np.savez(
-                f"{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}",
+                f"""{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}-"""
+                +f"""{self.PROP["_locs"][slice_][0]}_{self.PROP["_locs"][slice_][1]}""",
                 **dict_for_saving
                 )
         del dict_for_saving, self.final_ful_mask, self.final_mask_with_amsr2_size
