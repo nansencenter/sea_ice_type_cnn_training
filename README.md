@@ -1,6 +1,12 @@
 # description
 This data builder part of this repo (`data_builder.py`) provides the clean version of ASID v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
 ### DISCLAIMER: This code project is released as it without guarentees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with convolutional neural networks.
+The order of execution of different parts of the code is as follow:
+ 1. [Execute the data building](#requirement)
+ 2. Execute the tensorflow training(#execute-the-data-building)
+ 3. Execute the inference code
+ 4. Plotting the result of inference
+
 # Requirement
 just run the following command in your environment in order to install the requirements:
 
@@ -12,7 +18,9 @@ By just giving the full absolute address of the folder that contains all of the 
 
 This can be done writing this command:
 
-`python data_builder.py /absolute/path/to/the/folder/of/input/files`
+```python
+python data_builder.py /absolute/path/to/the/folder/of/input_files
+```
 
 This command will create a folder named **output** in the folder that contains the `data_builder.py` and write all the output files into it.
 
@@ -35,15 +43,42 @@ The output address as well as some other parameters for this process is configur
 
 As an example for the case of building data from **/fold1** folder and store them in **/fold2** folder with nersc noise calculation and having window size and stride of **400**, the command below is used:
 
-`python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400`
+```python
+python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400
+```
 
 
 # Execute the tensorflow training
 After building the data, you can train the tensorflow model with those `.npz` files as the result of
-data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder from pervious calcultion (data building) to the `mypath` variable in the script.
+data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder from pervious calcultion (data building) to the `outputpath` variable in the script.
 
 > It is strongly recommend to read the link below before using this part of the code because everything (including the classes and script) is developed based on explantion of this web page:
 https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
 
 If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the begning of the year for reading data between them.
+
+
+Train the tensorflow can be done writing this command:
+
+```python
+python keras_script.py
+```
+# Execute the inference code
+For seeing the result of network after training, `inference.py` can be used. To do this, just set the **stride** and **window size** in variables `stride` and `ws` equal to the values used for building the data. In this script, `outputpath` is the folder path of output of data building calculation and `netcdfpath` is the path of netcdf files that are being read for data building (as the input of data building). This script will create a folder named `reconstructs_folder` in the same folder that contains `output` folder and write its results in it.
+> **Hint**: If you use resizing for building the data and then train the network with the resized data, this inference code (and consequent plotting) is not applicable.
+**This inference code is only for cases that resizing is not used.**
+
+Execute the inference code can be done writing this command:
+
+```python
+python inference.py
+```
+
+# Plotting the result of inference
+For plotting, unlike all pervious executions, you need to run it from outside the development container of VScode. It means you have to install scipy and numpy on your env and run the `show.py` with the python interpreter outside the container. This code can also be substituted with an interative jupyter-notebook.
+Plotting can be done writing this command:
+
+```python
+python show.py
+```

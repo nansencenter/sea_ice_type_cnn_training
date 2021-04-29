@@ -10,8 +10,8 @@ import numpy as np
 
 def main():
 
-    stride = 600
-    ws = 700
+    stride = 700
+    ws = 700 #window size
     raise ValueError("stride must be equal or greater than the window size") if stride<ws else None
     outputpath="/workspaces/ASID-v2-builder/output"
     netcdfpath="/workspaces/ASID-v2-builder"
