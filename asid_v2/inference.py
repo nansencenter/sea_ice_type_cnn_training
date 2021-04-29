@@ -10,8 +10,9 @@ import numpy as np
 
 def main():
 
-    stride = 700
+    stride = 600
     ws = 700
+    raise ValueError("stride must be equal or greater than the window size") if stride<ws else None
     outputpath="/workspaces/ASID-v2-builder/output"
     netcdfpath="/workspaces/ASID-v2-builder"
     reconstruct_path = join(dirname(outputpath), "reconstructs_folder")
