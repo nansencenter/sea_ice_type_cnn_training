@@ -171,7 +171,7 @@ class Amsr2Batches(Batches):
 class Archive():
     def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
                  window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath,
-                step_sar, step_output):
+                step_sar, step_output, inference_mode):
         self.SAR_NAMES = sar_names
         self.NERSC = nersc
         self.STRIDE_SAR_SIZE = stride_sar_size
@@ -185,6 +185,7 @@ class Archive():
         self.DATAPATH = datapath
         self.step_sar = step_sar
         self.step_output = step_output
+        self.inference_mode = inference_mode
         self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
                       # different locations.
 
@@ -357,7 +358,10 @@ class Archive():
         self.final_ful_mask = np.ma.mask_or(mask_sar_size, mask_amsr)  # combination of masks
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
                                            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
-                                           )
+                                                                        )
+        if self.inference_mode:
+            self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
+            self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
 
     def write_scene_files_and_reset_archive_PROP(self):
         """

@@ -13,7 +13,7 @@ def main():
     stride = 700
     ws = 700 #window size
     raise ValueError("stride must be equal or greater than the window size") if stride<ws else None
-    outputpath="/workspaces/ASID-v2-builder/output"
+    outputpath="/workspaces/ASID-v2-builder/output_inference"
     netcdfpath="/workspaces/ASID-v2-builder"
     reconstruct_path = join(dirname(outputpath), "reconstructs_folder")
     if not isdir(reconstruct_path):

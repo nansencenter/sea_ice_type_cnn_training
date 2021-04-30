@@ -37,6 +37,9 @@ def read_input_params():
         '-s', '--stride', required=False, type=type_for_stride_and_window_size,default=700,
         help="stride for batching calculation(must be dividable to 50)")
     parser.add_argument(
+        '-i', '--inference_mode', action='store_true',
+        help="Save all locations of the scene for inference purposes of the scene (not for training).")
+    parser.add_argument(
         '-r','--rm_swath', required=False, type=int,default=0,
         help="threshold value for comparison with file.aoi_upperleft_sample to border the calculation")
     parser.add_argument(
@@ -60,6 +63,7 @@ def read_input_params():
     nersc = arg.noise_method
     step_sar = arg.step_resolution_sar
     step_output = arg.step_resolution_output
+    inference_mode = arg.inference_mode
     amsr_labels = [
         "btemp_6.9h",
         "btemp_6.9v",
@@ -93,7 +97,8 @@ def read_input_params():
         outpath,
         datapath,
         step_sar,
-        step_output
+        step_output,
+        inference_mode
     )
     return archive_
 
