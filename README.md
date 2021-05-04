@@ -1,5 +1,5 @@
 # description
-This repository provides the facilities for ASID v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
+This repository provides the facilities for ASIP v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
 ### DISCLAIMER: This code project is released as it without guarentees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with convolutional neural networks.
 The order of execution of different parts of the code is as follow:
  1. [Execute the data building](#requirement)
@@ -14,7 +14,7 @@ just run the following command in your environment in order to install the requi
 
 The users of Microsoft VScode can easily open the remote development container with the help of `.devcontainer` folder and Dockerfile
 # Execute the data building
-By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASID data, data building part of code is able to bluid the data based on those files and make them ready for further Machine learning training activities.
+By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASIP data, data building part of code is able to build the data based on those files and make them ready for further Machine learning training activities.
 
 This can be done writing this command:
 
@@ -26,7 +26,7 @@ This command will create a folder named **output** in the folder that contains t
 
 >  HINT: The folder containing input files must have all of the **.nc** files without any subfoldering
 
-The output address as well as some other parameters for this process is configurable. They can be given to the command above as an agrument of command. Table below shows the detail of them:
+The output address as well as some other parameters for this process is configurable. They can be given to the command above as an argument of command. Table below shows the detail of them:
 
 | Argument short form | Argument long form  | default value | Description
 | ------------------- | --------------------|-------------- | --------------
@@ -51,13 +51,13 @@ python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400
 
 # Execute the tensorflow training
 After building the data, you can train the tensorflow model with those `.npz` files as the result of
-data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder (which has been used with training mode) from pervious calcultion (data building) to the `outputpath` variable in the script.
+data building calculation. To do this, run the script `keras_script.py` by setting the address of output folder (which has been used with training mode) from pervious calculation (data building) to the `outputpath` variable in the script.
 
-> It is strongly recommend to read the link below before using this part of the code because everything (including the classes and script) is developed based on explantion of this web page:
+> It is strongly recommend to read the link below before using this part of the code because everything (including the classes and script) is developed based on explanation of this web page:
 https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
 
-If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the begning of the year for reading data between them.
+If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the beginning of the year for reading data between them.
 
 
 Train the tensorflow can be done writing this command:
@@ -66,7 +66,7 @@ Train the tensorflow can be done writing this command:
 python keras_script.py
 ```
 # Execute the inference code
-For seeing the result of network after training, `inference.py` can be used. To do this, just set the **stride** and **window size** in variables `stride` and `ws` equal to the values used for building the data. In this script, `outputpath` is the folder path of output of data building calculation (with inferernce mode activated by putting `-i` in arguments) and `netcdfpath` is the path of netcdf files that are being read for data building (as the input of data building). This script will create a folder named `reconstructs_folder` in the same folder that contains `output` folder and write its results in it.
+For seeing the result of network after training, `inference.py` can be used. To do this, just set the **stride** and **window size** in variables `stride` and `ws` equal to the values used for building the data. In this script, `outputpath` is the folder path of output of data building calculation (with inference mode activated by putting `-i` in arguments) and `netcdfpath` is the path of netcdf files that are being read for data building (as the input of data building). This script will create a folder named `reconstructs_folder` in the same folder that contains `output` folder and write its results in it.
 > **Hint**: If you use resizing for building the data and then train the network with the resized data, this inference code (and consequent plotting) is not applicable.
 **This inference code is only for cases that resizing is not used.**
 
@@ -77,7 +77,7 @@ python inference.py
 ```
 
 # Plotting the result of inference
-For plotting, unlike all pervious executions, you need to run it from outside the development container of VScode. It means you have to install scipy and numpy on your env and run the `show.py` with the python interpreter outside the container. This code can also be substituted with an interative jupyter-notebook.
+For plotting, unlike all pervious executions, you need to run it from outside the development container of VScode. It means you have to install scipy and numpy on your env and run the `show.py` with the python interpreter outside the container. This code can also be substituted with an interactive jupyter-notebook.
 Plotting can be done writing this command:
 
 ```python

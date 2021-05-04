@@ -1,20 +1,22 @@
 
-from netCDF4 import Dataset
-from os.path import join, isdir, dirname
 from os import listdir, mkdir
-import os
-from data_builder import read_input_params
-from keras_script import calculate_generator, create_model
-import tensorflow as tf
+from os.path import dirname, isdir, join
+
 import numpy as np
+import tensorflow as tf
+from netCDF4 import Dataset
+
+from utility import calculate_generator, create_model, read_input_params
+
 
 def main():
 
+    outputpath="/workspaces/ASIP-v2-builder/output_inference"
+    netcdfpath="/workspaces/ASIP-v2-builder"
     stride = 700
     ws = 700 #window size
-    raise ValueError("stride must be equal or greater than the window size") if stride<ws else None
-    outputpath="/workspaces/ASID-v2-builder/output_inference"
-    netcdfpath="/workspaces/ASID-v2-builder"
+    if stride<ws:
+        raise ValueError("stride must be equal or greater than the window size")
     reconstruct_path = join(dirname(outputpath), "reconstructs_folder")
     if not isdir(reconstruct_path):
         mkdir(reconstruct_path)
