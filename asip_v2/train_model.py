@@ -5,7 +5,7 @@ import re
 import datetime
 
 from keras.models import Sequential
-from keras_classes import DataGenerator
+from data_generator import DataGenerator
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Model
