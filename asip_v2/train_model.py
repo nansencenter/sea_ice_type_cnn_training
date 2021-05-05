@@ -18,13 +18,13 @@ def main():
     only_npz = [join(outputpath, f) for f in listdir(outputpath) if (f.endswith(".npz"))]
 
     training_generator, validation_generator, params = calculate_generator(
-    only_npz = only_npz,
-    shuffle_on_epoch_end = True,
-    beginning_day_of_year =  1,
-    ending_day_of_year = 365,
-    precentage_of_training = .8,
-    shuffle_for_training = True
-    )
+                                                                        only_npz = only_npz,
+                                                                        shuffle_on_epoch_end = True,
+                                                                        beginning_day_of_year =  1,
+                                                                        ending_day_of_year = 365,
+                                                                        precentage_of_training = .8,
+                                                                        shuffle_for_training = True
+                                                                        )
 
     model = create_model(params)
     model.summary()
