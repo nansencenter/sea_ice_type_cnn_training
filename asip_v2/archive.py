@@ -69,10 +69,15 @@ class Batches:
             key = self.name_conventer(element)
             # initiation of the array
             template = []
+            locs =[]
             for ix, iy in np.ndindex(self.batches_array[key].shape[:2]):
                 if (~self.batches_mask[ix, iy]).all():
                     template.append(self.resize(self.batches_array[key][ix, iy]).astype(self.astype))
+                    if self.__class__.__name__ == "Amsr2Batches": # only for doing it once,not several times!(only for speed)
+                        locs.append((ix,iy))
             PROP.update({key: template})
+            PROP.update({"_locs": locs}) if locs else None
+
         del self.batches_array
         del template
         return PROP
@@ -166,7 +171,7 @@ class Amsr2Batches(Batches):
 class Archive():
     def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
                  window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath,
-                step_sar, step_output):
+                step_sar, step_output, inference_mode):
         self.SAR_NAMES = sar_names
         self.NERSC = nersc
         self.STRIDE_SAR_SIZE = stride_sar_size
@@ -180,6 +185,7 @@ class Archive():
         self.DATAPATH = datapath
         self.step_sar = step_sar
         self.step_output = step_output
+        self.inference_mode = inference_mode
         self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
                       # different locations.
 
@@ -352,7 +358,10 @@ class Archive():
         self.final_ful_mask = np.ma.mask_or(mask_sar_size, mask_amsr)  # combination of masks
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
                                            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
-                                           )
+                                                                        )
+        if self.inference_mode:
+            self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
+            self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
 
     def write_scene_files_and_reset_archive_PROP(self):
         """
@@ -360,7 +369,8 @@ class Archive():
         previously in) self.PROP (that belongs to a specific location of scene) to a separate file.
         The file contains all variables which belongs to that location.
         """
-        desired_variable_names = self.SAR_NAMES + self.AMSR_LABELS + self.names_polygon_codes[1:]
+        desired_variable_names = self.SAR_NAMES \
+                                 + self.AMSR_LABELS + self.names_polygon_codes[1:] + ["_locs"]
         # removing dot from the name of variable
         desired_variable_names = [x.replace(".", "_") for x in desired_variable_names]
         # loop for saving each batch of separately in each file.
@@ -376,7 +386,8 @@ class Archive():
                     {name_without_dot: self.PROP[name_without_dot][slice_]}
                     )
             np.savez(
-                f"{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}",
+                f"""{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}-"""
+                +f"""{self.PROP["_locs"][slice_][0]}_{self.PROP["_locs"][slice_][1]}""",
                 **dict_for_saving
                 )
         del dict_for_saving, self.final_ful_mask, self.final_mask_with_amsr2_size
