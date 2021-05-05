@@ -19,10 +19,10 @@ By just giving the full absolute address of the folder that contains all of the 
 This can be done writing this command:
 
 ```python
-python data_builder.py /absolute/path/to/the/folder/of/input_files
+python build_dataset.py /absolute/path/to/the/folder/of/input_files
 ```
 
-This command will create a folder named **output** in the folder that contains the `data_builder.py` and write all the output files into it. This command is executable with two different modes, name Training and Inference which are determined by ABSENCE or PRESENCE of `-i` in the commandline.
+This command will create a folder named **output** in the folder that contains the `build_dataset.py` and write all the output files into it. This command is executable with two different modes, name Training and Inference which are determined by ABSENCE or PRESENCE of `-i` in the commandline.
 
 >  HINT: The folder containing input files must have all of the **.nc** files without any subfoldering
 
@@ -31,7 +31,7 @@ The output address as well as some other parameters for this process is configur
 | Argument short form | Argument long form  | default value | Description
 | ------------------- | --------------------|-------------- | --------------
 |  []                 |  []                 |  [no default]| The first and the only positional argument is the path to directory with input netCDF files needed for data building
-|  -o                 |  --output_dir       | same path of `data_builder.py` file      |Path to directory with output files
+|  -o                 |  --output_dir       | same path of `build_dataset.py` file      |Path to directory with output files
 |  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error. Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
 |  -w                 |   --window_size     |  700 | window size (of sar and ice chart data) for batching calculation (must be dividable to 50)(This will be the size of image samples that has been used for ML training step)
 |  -i                 |   --inference_mode  |  False (in the case of absence in the arguments) | Flag for distinguishing the two mode of data building (training or inference). This flag is working based on its ABSENCE or PRESENCE.
@@ -45,7 +45,7 @@ The output address as well as some other parameters for this process is configur
 As an example, for the case of building data from **/fold1** folder and store them in **/fold2** folder with nersc noise calculation, having window size and stride of **400**,and execution for training mode (not for inference) the command below is used:
 
 ```python
-python data_builder.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400
+python build_dataset.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400
 ```
 
 
@@ -63,17 +63,17 @@ If you want to run the training with scenes that are belong to a specific season
 Train the tensorflow can be done writing this command:
 
 ```python
-python keras_script.py
+python train_model.py
 ```
 # Execute the inference code
-For seeing the result of network after training, `inference.py` can be used. To do this, just set the **stride** and **window size** in variables `stride` and `ws` equal to the values used for building the data. In this script, `outputpath` is the folder path of output of data building calculation (with inference mode activated by putting `-i` in arguments) and `netcdfpath` is the path of netcdf files that are being read for data building (as the input of data building). This script will create a folder named `reconstructs_folder` in the same folder that contains `output` folder and write its results in it.
+For seeing the result of network after training, `apply_model.py` can be used. To do this, just set the **stride** and **window size** in variables `stride` and `ws` equal to the values used for building the data. In this script, `outputpath` is the folder path of output of data building calculation (with inference mode activated by putting `-i` in arguments) and `netcdfpath` is the path of netcdf files that are being read for data building (as the input of data building). This script will create a folder named `reconstructs_folder` in the same folder that contains `output` folder and write its results in it.
 > **Hint**: If you use resizing for building the data and then train the network with the resized data, this inference code (and consequent plotting) is not applicable.
 **This inference code is only for cases that resizing is not used.**
 
 Execute the inference code can be done writing this command:
 
 ```python
-python inference.py
+python apply_model.py
 ```
 
 # Plotting the result of inference

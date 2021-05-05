@@ -10,7 +10,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import Model
 
 from archive import Archive
-from keras_classes import DataGenerator
+from data_generator import DataGenerator
 
 
 def read_input_params():
