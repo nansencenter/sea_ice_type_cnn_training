@@ -16,7 +16,7 @@ The users of Microsoft VScode can easily open the remote development container w
 # Execute the data building
 By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASIP data, data building part of code is able to build the data based on those files and make them ready for further Machine learning training activities.
 
-This can be done writing this command:
+This can be done by writing this command:
 
 ```python
 python build_dataset.py /absolute/path/to/the/folder/of/input_files
@@ -60,7 +60,7 @@ https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 If you want to run the training with scenes that are belong to a specific season of the year(spring,summer,etc), then you can set `beginning_day_of_year` and `ending_day_of_year` variable in the script in order to make use of the files that are only belong to the period of year between these two numbers. These two numbers are start and end day count from the beginning of the year for reading data between them.
 
 
-Train the tensorflow can be done writing this command:
+Train the tensorflow can be done by writing this command:
 
 ```python
 python train_model.py
@@ -78,7 +78,7 @@ python apply_model.py
 
 # Plotting the result of inference
 For plotting, unlike all pervious executions, you need to run it from outside the development container of VScode. It means you have to install scipy and numpy on your env and run the `show.py` with the python interpreter outside the container. This code can also be substituted with an interactive jupyter-notebook.
-Plotting can be done writing this command:
+Plotting can be done by writing this command:
 
 ```python
 python show.py
