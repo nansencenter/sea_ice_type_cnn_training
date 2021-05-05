@@ -113,8 +113,16 @@ def read_input_params():
 def calculate_generator(only_npz,shuffle_on_epoch_end,beginning_day_of_year = 1,ending_day_of_year = 365,
                         precentage_of_training=.8, shuffle_for_training = True):
     """
-    Find out the proper
+    Find out the proper files based on "beginning_day_of_year" and "ending_day_of_year" among the
+    "only_npz" files. Then make the training and validation list of samples from the only_npz list.
+
+    Running the model by linking to this generator will provide the data of training and validation
+    batch by batch with batch size of this generator for the model.
+
+    "shuffle_for_training", "shuffle_on_epoch_end", and "precentage_of_training" are configures for
+    setting two sublists of training and validation out of only_npz list.
     """
+    batch_size = 4
     id_list = []
     for x in only_npz:
         datetime_ = datetime.datetime.strptime(basename(x).split("_")[0], '%Y%m%dT%H%M%S')
@@ -142,7 +150,7 @@ def calculate_generator(only_npz,shuffle_on_epoch_end,beginning_day_of_year = 1,
                 'output_var_name':output_var_name,
                 'input_var_names':input_var_names,
                 'amsr2_var_names':amsr2_var_names,
-            'batch_size': 4,
+            'batch_size': batch_size,
             }
     #generators
     training_generator = DataGenerator(partition['train'],shuffle_on_epoch_end, **params)
