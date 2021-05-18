@@ -77,11 +77,11 @@ def read_input_params():
         help="max threshold value for comparison with scenedate of files for considering a limited "
              "subset of files based on their counts from the first of january of the same year.")
     parser.add_argument(
-        '-p','--precentage_of_training', required=True, type=between_zero_and_one_float_type,
+        '-p','--precentage_of_training', required=False, type=between_zero_and_one_float_type,
         help="percentage of IDs that should be considered as training data (between 0,1). "
              "'1-precentage_of_training' fraction of data is considered as validation data.")
     parser.add_argument(
-        '-bs','--batch_size', required=True, type=int,
+        '-bs','--batch_size', required=False, type=int,
         help="batch size for data generator")
     parser.add_argument(
         '-d','--distance_threshold', required=False, type=int,default=0,
@@ -93,6 +93,14 @@ def read_input_params():
         '-b','--step_resolution_output', required=False, type=int,default=1,
         help="step for resizing the output variables")
     arg = parser.parse_args()
+
+    if parser.prog == "build_dataset.py" and (
+        "shuffle_on_epoch_end" in arg
+        or "shuffle_for_training" in arg
+        or "memory_mode" in arg
+        or "batch_size" in arg):
+        parser.error("""For data building, none of "shuffle_on_epoch_end", "shuffle_for_training",
+        "memory_mode" or "batch_size" should be appeared in th arguments.""")
     if not arg.apply_instead_of_training and arg.memory_mode:
         parser.error("Training mode should always be executed in file-base manner, not memory-based"
                      " one. Please remove both '-m' and '-i' from arguments for training purposes.")
