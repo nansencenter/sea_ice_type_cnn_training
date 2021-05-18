@@ -55,7 +55,7 @@ def read_input_params():
         " and window_size must be dividable to it.")
     parser.add_argument(
         '-i', '--apply_instead_of_training', action='store_true',
-        help="Save all locations of the scene for inference purposes of the scene (not for training).")
+        help="Consider all locations of the scene for inference purposes of the scene (not for training).")
     parser.add_argument(
         '-see', '--shuffle_on_epoch_end', action='store_true',
         help="Shuffle the training subset of IDs at the end of every epoch during the training.")
