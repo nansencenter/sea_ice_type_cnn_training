@@ -3,12 +3,12 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs,shuffle_on_epoch_end, batch_size, dims_input, dims_output,dims_amsr2,
+    def __init__(self, list_IDs,shuffle_on_epoch_end, prop, batch_size, dims_input, dims_output,dims_amsr2,
      output_var_name, input_var_names, amsr2_var_names):
-        'Initialization'
         self.dims_input = dims_input
         self.dims_output = dims_output
         self.dims_amsr2 = dims_amsr2
+        self.prop = prop
         self.batch_size = batch_size
         self.list_IDs = list_IDs
         self.input_var_names = input_var_names
@@ -27,12 +27,18 @@ class DataGenerator(keras.utils.Sequence):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
 
         # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        self.list_IDs_temp = [self.list_IDs[k] for k in indexes]
 
         # Generate data
-        [X,z], y = self.__data_generation(list_IDs_temp)
+        self.data_generation()
 
-        return [X,z], y
+        return [self.X,self.z], self.y
+
+    def x_y_z_initialization(self):
+        # Initialization
+        self.X = np.empty((self.batch_size, *self.dims_input))
+        self.y = np.empty((self.batch_size, *self.dims_output))
+        self.z = np.empty((self.batch_size, *self.dims_amsr2))
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
@@ -40,18 +46,40 @@ class DataGenerator(keras.utils.Sequence):
         if self.shuffle_on_epoch_end:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_IDs_temp):
+    def data_generation(self):
+        raise NotImplementedError('The data_generation() method was not implemented')
+
+class DataGeneratorFrom_npz_File(DataGenerator):
+
+    def data_generation(self):
         'Generates data containing batch_size samples' # X : (n_samples, *dim)
-        # Initialization
-        X = np.empty((self.batch_size, *self.dims_input))
-        y = np.empty((self.batch_size, *self.dims_output))
-        z = np.empty((self.batch_size, *self.dims_amsr2))
+        self.x_y_z_initialization()
 
         # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            y[i,:,:,0] = np.load(ID).get(self.output_var_name)/100
+        for i, ID in enumerate(self.list_IDs_temp):
+            self.y[i,:,:,0] = np.load(ID).get(self.output_var_name)/100
             for j, sar_name in enumerate(self.input_var_names):
-                X[i,:,:,j] = np.load(ID).get(sar_name)
+                self.X[i,:,:,j] = np.load(ID).get(sar_name)
             for j, amsr2_name in enumerate(self.amsr2_var_names):
-                z[i,:,:,j] = np.load(ID).get(amsr2_name)
-        return [X,z], y
+                self.z[i,:,:,j] = np.load(ID).get(amsr2_name)
+
+class DataGeneratorFromMemory(DataGenerator):
+    def data_generation(self):
+        'Generates data containing batch_size samples' # X : (n_samples, *dim)
+        self.x_y_z_initialization()
+
+        # Generate data
+        for i, ID in enumerate(self.list_IDs_temp):
+            self.y[i,:,:,0] = (
+                ans for x, ans in zip(self.prop["_locs"], self.prop[self.output_var_name]) if x==ID
+                              ).__next__()
+
+            for j, sar_name in enumerate(self.input_var_names):
+                self.X[i,:,:,j] = (
+                    ans for x, ans in zip(self.prop["_locs"], self.prop[sar_name]) if x==ID
+                                  ).__next__()
+
+            for j, amsr2_name in enumerate(self.amsr2_var_names):
+                self.z[i,:,:,j] = (
+                    ans for x, ans in zip(self.prop["_locs"], self.prop[amsr2_name]) if x==ID
+                                  ).__next__()

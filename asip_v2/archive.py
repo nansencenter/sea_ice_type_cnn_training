@@ -169,9 +169,29 @@ class Amsr2Batches(Batches):
 
 
 class Archive():
-    def __init__(self, sar_names, nersc, stride_sar_size, stride_ams2_size, window_size,
-                 window_size_amsr2, amsr_labels, distance_threshold, rm_swath, outpath, datapath,
-                step_sar, step_output, inference_mode):
+    def __init__(self,
+                 sar_names,
+                 nersc,
+                 stride_sar_size,
+                 stride_ams2_size,
+                 window_size,
+                 window_size_amsr2,
+                 amsr_labels,
+                 distance_threshold,
+                 rm_swath,
+                 outpath,
+                 datapath,
+                 step_sar,
+                 step_output,
+                 apply_instead_of_training,
+                 memory_mode,
+                 shuffle_on_epoch_end,
+                 shuffle_for_training,
+                 precentage_of_training,
+                 beginning_day_of_year,
+                 ending_day_of_year,
+                 batch_size,
+                 aspect_ratio):
         self.SAR_NAMES = sar_names
         self.NERSC = nersc
         self.STRIDE_SAR_SIZE = stride_sar_size
@@ -185,9 +205,18 @@ class Archive():
         self.DATAPATH = datapath
         self.step_sar = step_sar
         self.step_output = step_output
-        self.inference_mode = inference_mode
+        self.apply_instead_of_training = apply_instead_of_training
+        self.memory_mode = memory_mode # store the scene in memory instead of using npz files
+        self.shuffle_on_epoch_end = shuffle_on_epoch_end
+        self.shuffle_for_training = shuffle_for_training
+        self.precentage_of_training = precentage_of_training
+        self.beginning_day_of_year = beginning_day_of_year
+        self.ending_day_of_year = ending_day_of_year
+        self.batch_size = batch_size
+        self.ASPECT_RATIO = aspect_ratio
         self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
                       # different locations.
+
 
     def get_unprocessed_files(self):
         """
@@ -215,7 +244,7 @@ class Archive():
             dump(self.processed_files, outfile)
 
     def check_file_healthiness(self, fil, filename):
-        """Check the healthiness of file by checking the existance of 'polygon_icechart' and
+        """Check the healthiness of file by checking the existence of 'polygon_icechart' and
         AMSR LABELS in the 'variables' section of NETCDF file. The comparison of window size and
         size of the file is also done at the end. """
         if 'polygon_icechart' not in fil.variables:
@@ -359,7 +388,7 @@ class Archive():
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
                                            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
                                                                         )
-        if self.inference_mode:
+        if self.apply_instead_of_training:
             self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
             self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
 
@@ -399,3 +428,15 @@ class Archive():
                                             self.STRIDE_SAR_SIZE)
         self.mask_batches_amsr2 = view_as_windows(
                     self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
+
+    def calculate_PROP_of_archive(self, fil, filename):
+        if self.check_file_healthiness(fil, filename):
+            self.read_icechart_coding(fil, filename)
+            self.calculate_mask(fil)
+            self.calculate_batches_for_masks()
+            for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
+                obj = cls_(self)
+                obj.pad_and_batch(fil)
+                self.PROP.update(obj.calculate_variable_ML())
+                del obj
+            del self.mask_batches_amsr2, self.mask_batches
