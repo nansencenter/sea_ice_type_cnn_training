@@ -31,11 +31,11 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run tests
-        run: coverage run -m unittest asip_v2/tests.py --no-transfer-progress
+        run: coverage run -m unittest asip_v2/tests.py 
         
-      - name: Publish to coveralls.io
+      - name: Publish to codecov.io
         uses: codecov/codecov-action@v1
         with:
-          file: ./**/target/site/jacoco/jacoco.xml
+          flags: unittests
           name: codecov
           
