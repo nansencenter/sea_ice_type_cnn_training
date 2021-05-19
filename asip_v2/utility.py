@@ -36,7 +36,7 @@ def read_input_params():
     parser.add_argument(
         'input_dir', type=str, help="Path to directory with input netCDF files")
     parser.add_argument(
-        '-o','--output_dir', type=str, required=False,
+        '-o','--output_dir', type=str, required=True,
         default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
         help="Path to directory with output files (npz files)",)
     parser.add_argument(
@@ -387,7 +387,7 @@ class Configure():
         """
         With the help of set_path_for_reconstruct function the 'reconstructs_folder' will be created
         at the same level of input directory (for memory-based config) or one level up in foldering
-        hierarchy (for file-based config) in order not to put the reconstruced ones and npz files
+        hierarchy (for file-based config) in order not to put the reconstructed ones and npz files
         in the same folder. This function is only for folder management.
         """
         self.reconstruct_path = join(
