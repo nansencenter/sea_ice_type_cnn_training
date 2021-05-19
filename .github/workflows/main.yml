@@ -31,6 +31,9 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run tests
-        run: coverage run -m unittest asip_v2/tests.py && coveralls
-        env: COVERALLS_REPO_TOKEN
+        run: coverage run -m unittest asip_v2/tests.py
+      - name: Publish to coveralls.io
+        uses: coverallsapp/github-action@v1.1.2
+        with:
+          github-token: ${{ COVERALLS_REPO_TOKEN }}
           
