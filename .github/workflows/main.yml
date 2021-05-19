@@ -31,5 +31,5 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run tests
-        run: |
-          python -m unittest asip_v2/tests.py
+        run: coverage run -m unittest asip_v2/tests.py && coverage html
+          
