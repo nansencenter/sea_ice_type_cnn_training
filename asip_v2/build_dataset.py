@@ -17,9 +17,9 @@ def main():
     for i, filename in enumerate(archive_.files):
         print("Starting %d out of %d unprocessed files" % (i, len(archive_.files)))
         fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
-        archive_.calculate_PROP_of_archive(fil, filename)
+        archive_.process_dataset(fil, filename)
         # saving section
-        archive_.write_scene_files_and_reset_archive_PROP()
+        archive_.write_batches()
         archive_.update_processed_files(i)
         del fil
 

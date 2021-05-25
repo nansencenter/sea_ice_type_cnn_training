@@ -392,7 +392,7 @@ class Archive():
             self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
             self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
 
-    def write_scene_files_and_reset_archive_PROP(self):
+    def write_batches(self):
         """
         This function writes specific slice of desired variable names (that has been stored
         previously in) self.PROP (that belongs to a specific location of scene) to a separate file.
@@ -429,7 +429,7 @@ class Archive():
         self.mask_batches_amsr2 = view_as_windows(
                     self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
 
-    def calculate_PROP_of_archive(self, fil, filename):
+    def process_dataset(self, fil, filename):
         if self.check_file_healthiness(fil, filename):
             self.read_icechart_coding(fil, filename)
             self.calculate_mask(fil)
