@@ -40,7 +40,7 @@ jobs:
           docker run --entrypoint coverage -v $(pwd):/usr/src/app research_project run -m unittest /usr/src/app/asip_v2/run_tests.py
 
       - name: r1
-        run: echo $pwd
+        run: echo $(pwd)
       - name: r2
         run: ls -a
 
@@ -48,5 +48,5 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           flags: unittests
-          directory: $(pwd)/asip_v2
+          directory: /home/runner/work/satellite-data-pipeline/satellite-data-pipeline/asip_v2/
           
