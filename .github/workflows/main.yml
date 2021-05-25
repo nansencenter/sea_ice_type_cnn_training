@@ -42,11 +42,11 @@ jobs:
       - name: r1
         run: echo $(pwd)
       - name: r2
-        run: ls -a
+        run: ls -a asip_v2
 
       - name: Publish to codecov.io
         uses: codecov/codecov-action@v1
         with:
           flags: unittests
-          directory: /home/runner/work/satellite-data-pipeline/satellite-data-pipeline/asip_v2/
+          directory: asip_v2/
           
