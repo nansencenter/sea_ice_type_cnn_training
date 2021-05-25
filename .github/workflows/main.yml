@@ -37,7 +37,7 @@ jobs:
       - name: Run tests
         run: |
           docker build --tag research_project .
-          docker run --rm --entrypoint coverage -v /workspaces/ASIP-v2-builder/asip_v2:/workspaces/ASIP-v2-builder/asip_v2 research_project run -m unittest /usr/src/app/asip_v2/run_tests.py
+          docker run --entrypoint coverage -v /workspaces/ASIP-v2-builder/asip_v2:/usr/src/app/asip_v2 research_project run -m unittest /usr/src/app/asip_v2/run_tests.py
 
       - name: Publish to codecov.io
         uses: codecov/codecov-action@v1
