@@ -39,6 +39,11 @@ jobs:
           docker build --tag research_project .
           docker run --entrypoint coverage -v $(pwd):/usr/src/app research_project run -m unittest /usr/src/app/asip_v2/run_tests.py
 
+      - name: r1
+        run: echo $pwd
+      - name: r2
+        run: ls -a
+
       - name: Publish to codecov.io
         uses: codecov/codecov-action@v1
         with:
