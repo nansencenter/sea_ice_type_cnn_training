@@ -37,7 +37,7 @@ jobs:
       - name: Run tests
         run: |
           docker build --tag research_project .
-          docker run --rm research_project /usr/src/app/asip_v2/run_tests.py && python -m codecov
+          docker run --rm research_project coverage run -m unittest /usr/src/app/asip_v2/run_tests.py
 
       - name: Publish to codecov.io
         uses: codecov/codecov-action@v1
