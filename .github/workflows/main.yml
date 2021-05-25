@@ -37,7 +37,8 @@ jobs:
       - name: Run tests
         run: |
           docker build --tag research_project .
-          docker run --entrypoint coverage -v $(pwd):/usr/src/app research_project run -m unittest /usr/src/app/asip_v2/run_tests.py && bash <(curl -s https://codecov.io/bash)
+          docker run --entrypoint coverage -v $(pwd):/usr/src/app research_project run -m unittest /usr/src/app/asip_v2/run_tests.py
+          docker run --entrypoint coverage -v $(pwd):/usr/src/app research_project xml
 
       - name: r1
         run: echo $(pwd)
