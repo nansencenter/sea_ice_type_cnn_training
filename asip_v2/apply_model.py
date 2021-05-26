@@ -127,6 +127,13 @@ class MemoryBasedConfigure(Configure):
         self.img = np.zeros(shape=np.multiply(shape_amsr2, self.ASPECT_RATIO))
         self.patch_locs = self.archive.PROP['_locs']
 
+    def set_params(self):
+        """
+        create 'self.params' with one addition part that holds the information in memory
+        """
+        super().set_params()
+        self.params['prop'] = self.archive.PROP
+
 def read_input_params_for_applying():
     parser = common_parser()
     parser.add_argument('-bs','--batch_size', required=False, type=int,

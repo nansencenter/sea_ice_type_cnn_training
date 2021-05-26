@@ -3,12 +3,11 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs,shuffle_on_epoch_end, prop, batch_size, dims_input, dims_output,dims_amsr2,
-     output_var_name, input_var_names, amsr2_var_names):
+    def __init__(self, list_IDs,shuffle_on_epoch_end, batch_size, dims_input, dims_output,dims_amsr2,
+     output_var_name, input_var_names, amsr2_var_names, prop=None):
         self.dims_input = dims_input
         self.dims_output = dims_output
         self.dims_amsr2 = dims_amsr2
-        self.prop = prop
         self.batch_size = batch_size
         self.list_IDs = list_IDs
         self.input_var_names = input_var_names
@@ -64,6 +63,10 @@ class DataGeneratorFrom_npz_File(DataGenerator):
                 self.z[i,:,:,j] = np.load(ID).get(amsr2_name)
 
 class DataGeneratorFromMemory(DataGenerator):
+    def __init__(self,list_IDs,**kwargs):
+        super().__init__(list_IDs,**kwargs)
+        self.prop = kwargs.pop('prop')
+
     def data_generation(self):
         'Generates data containing batch_size samples' # X : (n_samples, *dim)
         self.x_y_z_initialization()

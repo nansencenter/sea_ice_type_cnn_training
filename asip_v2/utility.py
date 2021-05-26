@@ -171,7 +171,8 @@ class Configure():
         self.filling_id_list()
         self.divide_id_list_into_partition()
         self.calculate_dims()
-        self.instantiate_generator_with_params_and_associated_partition()
+        self.set_params()
+        self.instantiate_generators_with_associated_partition()
 
     def divide_id_list_into_partition(self):
         """
@@ -187,9 +188,9 @@ class Configure():
         # Datasets
         self.partition = {'train': train_sublist_id_list, 'validation': valid_sublist_id_list}
 
-    def instantiate_generator_with_params_and_associated_partition(self):
+    def set_params(self):
         """
-        create 'self.params' and instantiate the generator with proper partition and 'self.params'.
+        create 'self.params'.
         """
         self.params = {'dims_input':      (*self.dims_input, len(self.input_var_names)),
                        'dims_output':     (*self.dims_output, 1),
@@ -199,8 +200,9 @@ class Configure():
                        'amsr2_var_names': self.amsr2_var_names,
                        'batch_size':      self.batch_size,
                        'shuffle_on_epoch_end': self.shuffle_on_epoch_end,
-                       'prop': self.archive.PROP,
                        }
+
+    def instantiate_generators_with_associated_partition(self):
         #generators
         self.training_generator = self.DataGenerator_(self.partition['train'], **self.params)
         self.validation_generator = self.DataGenerator_(self.partition['validation'], **self.params)
