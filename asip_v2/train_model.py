@@ -1,17 +1,25 @@
+import argparse
 import datetime
 import os
 from os.path import basename, dirname, join
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import layers
+from tensorflow.keras.models import Model
 
+from archive import Archive
 from data_generator import DataGeneratorFrom_npz_File
-from utility import Configure, read_input_params
+from utility import Configure, create_model, between_zero_and_one_float_type
 
 
 class FileBasedConfigure(Configure):
     DataGenerator_ = DataGeneratorFrom_npz_File
     extension = ".npz"
+    create_model = create_model
+    input_var_names = ['nersc_sar_primary', 'nersc_sar_secondary']
+    output_var_name = 'CT'
+    amsr2_var_names = ['btemp_6_9h','btemp_6_9v']
 
     def train_model(self):
         """
@@ -43,10 +51,38 @@ class FileBasedConfigure(Configure):
                        use_multiprocessing=True,
                        workers=4,
                        epochs=4,
-                       # TODO: uncomment this line to able callbacks
+                       # uncomment this line to enable the callbacks
                        #callbacks=[tensorboard_callback, cp_callback],
                       )
         self.model.save("final_model")
+
+    # define a customize model structure by uncommenting this function and define a new model
+    #def create_model(self):
+    #    """
+    #    create a keras model based on self.params variable (just for setting the input size)
+    #    """
+    #    input_ = layers.Input(shape=self.params['dims_input'])
+    #    input_2 = layers.Input(shape=self.params['dims_amsr2'])
+    #    x = layers.BatchNormalization()(input_)
+    #    x = layers.Conv2D(8, (3, 3), padding='same', activation='relu')(x)
+    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
+    #    x = layers.Conv2D(16, (3, 3), padding='same', activation='relu')(x)
+    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
+    #    x = layers.Conv2D(32, (3, 3), padding='same', activation='relu')(x)
+    #    x = layers.AveragePooling2D(pool_size=(7,7), strides=(6,6))(x)
+    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
+    #    x = layers.Concatenate()([x, input_2])
+    #    x = layers.UpSampling2D(size=(10, 10))(x)
+    #    x = layers.UpSampling2D(size=(5, 5))(x)
+    #    #x = layers.Conv2DTranspose(filters=16, kernel_size=3, strides=2, padding='same')(x)
+    #    #x = layers.Conv2DTranspose(filters=8, kernel_size=3, strides=2, padding='same')(x)
+    #    x = layers.Conv2D(filters=1, kernel_size=1, strides=1, padding='same')(x)
+    #    self.model = Model(
+    #        inputs=[input_, input_2], outputs=x)
+    #    opt = tf.keras.optimizers.Adam(
+    #        learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False
+    #        )
+    #    self.model.compile(optimizer=opt, loss='mse', metrics=['accuracy'])
 
     @staticmethod
     def set_path_for_reconstruct(x):
@@ -95,12 +131,47 @@ class FileBasedConfigure(Configure):
                                         (max(self.patch_locs)[0] + 1, max(self.patch_locs)[1] + 1)
                                              ))
 
-
-
+def read_input_params_for_training():
+    parser = argparse.ArgumentParser(description='Process the arguments of script')
+    parser.add_argument(
+        '-o','--output_dir', type=str, required=True,
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
+        help="Path to directory with output files (npz files)",)
+    parser.add_argument(
+        '-see', '--shuffle_on_epoch_end', action='store_true',
+        help="Shuffle the training subset of IDs at the end of every epoch during the training.")
+    parser.add_argument(
+        '-sft', '--shuffle_for_training', action='store_true',
+        help="Shuffle the list of IDs before dividing it into two 'training' and 'validation' subsets.")
+    parser.add_argument(
+        '-bd','--beginning_day_of_year', required=False, type=int, default=0,
+        help="min threshold value for comparison with scenedate of files for considering a limited "
+             "subset of files based on their counts from the first of january of the same year.")
+    parser.add_argument(
+        '-ed','--ending_day_of_year', required=False, type=int, default=365,
+        help="max threshold value for comparison with scenedate of files for considering a limited "
+             "subset of files based on their counts from the first of january of the same year.")
+    parser.add_argument(
+        '-bs','--batch_size', required=False, type=int,
+        help="batch size for data generator")
+    parser.add_argument(
+        '-p','--precentage_of_training', required=False, type=between_zero_and_one_float_type,
+        help="percentage of IDs that should be considered as training data (between 0,1). "
+             "'1-precentage_of_training' fraction of data is considered as validation data.")
+    arg = parser.parse_args()
+    return Archive(
+                   outpath=arg.output_dir,
+                   shuffle_on_epoch_end=arg.shuffle_on_epoch_end,
+                   shuffle_for_training=arg.shuffle_for_training,
+                   precentage_of_training=arg.precentage_of_training,
+                   beginning_day_of_year=arg.beginning_day_of_year,
+                   ending_day_of_year=arg.ending_day_of_year,
+                   batch_size=arg.batch_size,
+                   apply_instead_of_training=False
+                  )
 
 def main():
-
-    archive_ = read_input_params()
+    archive_ = read_input_params_for_training()
 
     config_ = FileBasedConfigure(archive=archive_)
 

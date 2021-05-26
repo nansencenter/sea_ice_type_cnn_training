@@ -1,17 +1,21 @@
 import os
 from os.path import basename, isdir, join
-
+import argparse
 import numpy as np
 import tensorflow as tf
 from netCDF4 import Dataset
 
 from data_generator import DataGeneratorFromMemory
-from utility import Configure, read_input_params
-
+from utility import Configure, type_for_nersc_noise, create_model, common_parser, postprocess_the_args
+from archive import Archive
 
 class MemoryBasedConfigure(Configure):
     DataGenerator_ = DataGeneratorFromMemory
     extension = ".nc"
+    create_model = create_model
+    input_var_names = ['nersc_sar_primary', 'nersc_sar_secondary']
+    output_var_name = 'CT'
+    amsr2_var_names = ['btemp_6_9h','btemp_6_9v']
 
     def apply_model(self):
         """
@@ -123,9 +127,22 @@ class MemoryBasedConfigure(Configure):
         self.img = np.zeros(shape=np.multiply(shape_amsr2, self.ASPECT_RATIO))
         self.patch_locs = self.archive.PROP['_locs']
 
+def read_input_params_for_applying():
+    parser = common_parser()
+    parser.add_argument('-bs','--batch_size', required=False, type=int,
+                        help="batch size for data generator")
+    arg = parser.parse_args()
+    dict_for_archive_init = postprocess_the_args(arg)
+    dict_for_archive_init["apply_instead_of_training"] = True
+    dict_for_archive_init["shuffle_on_epoch_end"] = False
+    dict_for_archive_init["shuffle_for_training"] = False
+    dict_for_archive_init["precentage_of_training"] = 1.
+    dict_for_archive_init["batch_size"] = arg.batch_size
+    return Archive(**dict_for_archive_init)
+
 def main():
 
-    archive_ = read_input_params()
+    archive_ = read_input_params_for_applying()
 
     config_ = MemoryBasedConfigure(archive=archive_)
 

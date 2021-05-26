@@ -170,28 +170,28 @@ class Amsr2Batches(Batches):
 
 class Archive():
     def __init__(self,
-                 sar_names,
-                 nersc,
-                 stride_sar_size,
-                 stride_ams2_size,
-                 window_size,
-                 window_size_amsr2,
-                 amsr_labels,
-                 distance_threshold,
-                 rm_swath,
-                 outpath,
-                 datapath,
-                 step_sar,
-                 step_output,
-                 apply_instead_of_training,
-                 memory_mode,
-                 shuffle_on_epoch_end,
-                 shuffle_for_training,
-                 precentage_of_training,
-                 beginning_day_of_year,
-                 ending_day_of_year,
-                 batch_size,
-                 aspect_ratio):
+                 sar_names=None,
+                 nersc=None,
+                 stride_sar_size=None,
+                 stride_ams2_size=None,
+                 window_size=None,
+                 window_size_amsr2=None,
+                 amsr_labels=None,
+                 distance_threshold=None,
+                 rm_swath=None,
+                 outpath=None,
+                 datapath=None,
+                 step_sar=None,
+                 step_output=None,
+                 apply_instead_of_training=None,
+                 memory_mode=None,
+                 shuffle_on_epoch_end=None,
+                 shuffle_for_training=None,
+                 precentage_of_training=None,
+                 beginning_day_of_year=None,
+                 ending_day_of_year=None,
+                 batch_size=None,
+                 aspect_ratio=None):
         self.SAR_NAMES = sar_names
         self.NERSC = nersc
         self.STRIDE_SAR_SIZE = stride_sar_size
@@ -206,7 +206,6 @@ class Archive():
         self.step_sar = step_sar
         self.step_output = step_output
         self.apply_instead_of_training = apply_instead_of_training
-        self.memory_mode = memory_mode # store the scene in memory instead of using npz files
         self.shuffle_on_epoch_end = shuffle_on_epoch_end
         self.shuffle_for_training = shuffle_for_training
         self.precentage_of_training = precentage_of_training

@@ -10,137 +10,73 @@ from tensorflow.keras.models import Model
 
 from archive import Archive
 
-
-def read_input_params():
-    """
-    read the input data based on the command line arguments and return an instance of archive class
-    """
-    def type_for_nersc_noise(str_):
-        if not (str_=="" or str_=="nersc_"):
-            parser.error("'--noise_method' MUST be '' or 'nersc_'.")
-        return str_
-    def between_zero_and_one_float_type(arg):
-        """ Type function for argparse - a float within some predefined bounds """
-        try:
-            f = float(arg)
-        except ValueError:
-            raise argparse.ArgumentTypeError("Must be a floating point number")
-        if f <= 0. or f > 1.:
-            raise argparse.ArgumentTypeError("Argument must be =< " + str(1.) + " and > " + str(0.))
-        return f
-
+def parse_common_args():
+    """Instantiates and creates common arguments of parser which works with 'argparse' of python."""
     parser = argparse.ArgumentParser(description='Process the arguments of script')
-    parser.add_argument(
-        'input_dir', type=str, help="Path to directory with input netCDF files")
-    parser.add_argument(
-        '-o','--output_dir', type=str, required=True,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
-        help="Path to directory with output files (npz files)",)
-    parser.add_argument(
-        '-n', '--noise_method', required=False, type=type_for_nersc_noise,default="nersc_",
-        help="the method that error calculation had been used for error.Leave as empty string '' for"
-                    "ESA noise corrections or as 'nersc_' for the Nansen center noise correction.")
-    parser.add_argument(
-        '-w', '--window_size', required=False, type=int,default=700,
-        help="window size for batching calculation(must be dividable to 50)")
-    parser.add_argument(
-        '-s', '--stride', required=False, type=int,default=700,
-        help="stride for batching calculation(must be dividable to 50)")
+    parser.add_argument()
+
+    return parser
+
+def between_zero_and_one_float_type(arg):
+    """ Type function for argparse - a float within some predefined bounds """
+    try:
+        f = float(arg)
+    except ValueError:
+        raise argparse.ArgumentTypeError("Must be a floating point number")
+    if f <= 0. or f > 1.:
+        raise argparse.ArgumentTypeError("Argument must be =< " + str(1.) + " and > " + str(0.))
+    return f
+
+def type_for_nersc_noise(str_):
+    """ Type function for argparse - a string that is specific to noise method """
+    if not (str_=="" or str_=="nersc_"):
+        raise argparse.ArgumentTypeError("'--noise_method' MUST be '' or 'nersc_'.")
+    return str_
+
+def common_parser():
+    "Common parser which is shared between building the dataset and applying it"
+    parser = argparse.ArgumentParser(description='Process the arguments of script')
+    parser.add_argument('input_dir', type=str, help="Path to directory with input netCDF files")
     parser.add_argument(
         '-r', '--aspect_ratio', required=True, type=int,
         help="The ration between the cell size of primary and secondary input of ML model. stride"
         " and window_size must be dividable to it.")
     parser.add_argument(
-        '-i', '--apply_instead_of_training', action='store_true',
-        help="Consider all locations of the scene for inference purposes of the scene (not for training).")
-    parser.add_argument(
-        '-see', '--shuffle_on_epoch_end', action='store_true',
-        help="Shuffle the training subset of IDs at the end of every epoch during the training.")
-    parser.add_argument(
-        '-sft', '--shuffle_for_training', action='store_true',
-        help="Shuffle the list of IDs before dividing it into two 'training' and 'validation' subsets.")
-    parser.add_argument(
-        '-m', '--memory_mode', action='store_true',
-        help="use memory instead of npz files for the input of inference of the scene (not for training).")
+        '-w', '--window_size', required=False, type=int,default=700,
+        help="window size for batching calculation(must be dividable to 50)")
     parser.add_argument(
         '-swa','--rm_swath', required=False, type=int,default=0,
         help="threshold value for comparison with file.aoi_upperleft_sample to border the calculation")
     parser.add_argument(
-        '-bd','--beginning_day_of_year', required=False, type=int, default=0,
-        help="min threshold value for comparison with scenedate of files for considering a limited "
-             "subset of files based on their counts from the first of january of the same year.")
-    parser.add_argument(
-        '-ed','--ending_day_of_year', required=False, type=int, default=365,
-        help="max threshold value for comparison with scenedate of files for considering a limited "
-             "subset of files based on their counts from the first of january of the same year.")
-    parser.add_argument(
-        '-p','--precentage_of_training', required=False, type=between_zero_and_one_float_type,
-        help="percentage of IDs that should be considered as training data (between 0,1). "
-             "'1-precentage_of_training' fraction of data is considered as validation data.")
-    parser.add_argument(
-        '-bs','--batch_size', required=False, type=int,
-        help="batch size for data generator")
+        '-n', '--noise_method', required=False, type=type_for_nersc_noise, default="nersc_",
+        help="the method that error calculation had been used for error.Leave as empty string '' for"
+                    "ESA noise corrections or as 'nersc_' for the Nansen center noise correction.")
     parser.add_argument(
         '-d','--distance_threshold', required=False, type=int,default=0,
         help="threshold for distance from land in mask calculation")
+    parser.add_argument(
+        '-s', '--stride', required=False, type=int,default=700,
+        help="stride for batching calculation(must be dividable to 50)")
     parser.add_argument(
         '-a','--step_resolution_sar', required=False, type=int,default=1,
         help="step for resizing the sar data")
     parser.add_argument(
         '-b','--step_resolution_output', required=False, type=int,default=1,
         help="step for resizing the output variables")
-    arg = parser.parse_args()
+    return parser
 
-    if parser.prog == "build_dataset.py" and (
-        "shuffle_on_epoch_end" in arg
-        or "shuffle_for_training" in arg
-        or "memory_mode" in arg
-        or "batch_size" in arg):
-        parser.error("""For data building, none of "shuffle_on_epoch_end", "shuffle_for_training",
-        "memory_mode" or "batch_size" should be appeared in th arguments.""")
-    if not arg.apply_instead_of_training and arg.memory_mode:
-        parser.error("Training mode should always be executed in file-base manner, not memory-based"
-                     " one. Please remove both '-m' and '-i' from arguments for training purposes.")
-    if not arg.apply_instead_of_training and int(arg.precentage_of_training) == 1:
-        parser.error("Training mode should always be executed with 'precentage_of_training' less"
-                     " than 1 .Please correct the value in arguments in order to consider some "
-                     "validation data as well.")
-    if arg.apply_instead_of_training and arg.shuffle_for_training:
-        parser.error("Inference mode should always be executed without 'shuffle_for_training' arg.")
-    if arg.apply_instead_of_training and arg.shuffle_on_epoch_end:
-        parser.error("Inference mode should always be executed without 'shuffle_on_epoch_end' arg.")
-    if arg.apply_instead_of_training and int(arg.precentage_of_training) != 1:
-        parser.error("Inference mode should always be executed with 'precentage_of_training=1'. "
-                     "Please correct the value in arguments.")
-    if arg.apply_instead_of_training and (
-                                    arg.beginning_day_of_year != 0 or arg.ending_day_of_year != 365
-                                         ):
-        parser.error("Inference mode should always be executed regardless of scenedate. Please remove"
-            " 'beginning_day_of_year' and 'ending_day_of_year' from arguments in inference mode.")
+def postprocess_the_args(arg):
+    """
+    postprocess the args based on the received values and return 'dict_for_archive_init'
+    """
     if arg.window_size % arg.aspect_ratio:
-        parser.error(f"Window size must be dividable to value of aspect_ratio ={arg.aspect_ratio}")
+        raise argparse.ArgumentError(arg.window_size,
+                        f"Window size must be dividable to value of aspect_ratio ={arg.aspect_ratio}")
     if arg.stride % arg.aspect_ratio:
-        parser.error(f"Stridemust be dividable to value of aspect_ratio = {arg.aspect_ratio}")
+        raise argparse.ArgumentError(arg.stride,
+                            f"Stride must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
     window_size_amsr2 = (arg.window_size // arg.aspect_ratio, arg.window_size // arg.aspect_ratio)
-    stride_ams2_size = arg.stride // arg.aspect_ratio
     window_size = (arg.window_size, arg.window_size)
-    stride_sar_size = arg.window_size
-    rm_swath = arg.rm_swath
-    distance_threshold = arg.distance_threshold
-    datapath = arg.input_dir
-    outpath = arg.output_dir
-    nersc = arg.noise_method
-    step_sar = arg.step_resolution_sar
-    step_output = arg.step_resolution_output
-    apply_instead_of_training = arg.apply_instead_of_training
-    memory_mode = arg.memory_mode
-    shuffle_on_epoch_end = arg.shuffle_on_epoch_end
-    shuffle_for_training = arg.shuffle_for_training
-    precentage_of_training = arg.precentage_of_training
-    beginning_day_of_year = arg.beginning_day_of_year
-    ending_day_of_year = arg.ending_day_of_year
-    batch_size = arg.batch_size
-    aspect_ratio = arg.aspect_ratio
     amsr_labels = [
         "btemp_6.9h",
         "btemp_6.9v",
@@ -157,34 +93,24 @@ def read_input_params():
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-
+    nersc = arg.noise_method
     sar_names = [nersc + "sar_primary", nersc + "sar_secondary"]
-    if not os.path.exists(outpath):
-        os.mkdir(outpath)
-    return Archive(
-        sar_names,
-        nersc,
-        stride_sar_size,
-        stride_ams2_size,
-        window_size,
-        window_size_amsr2,
-        amsr_labels,
-        distance_threshold,
-        rm_swath,
-        outpath,
-        datapath,
-        step_sar,
-        step_output,
-        apply_instead_of_training,
-        memory_mode,
-        shuffle_on_epoch_end,
-        shuffle_for_training,
-        precentage_of_training,
-        beginning_day_of_year,
-        ending_day_of_year,
-        batch_size,
-        aspect_ratio
-                   )
+    stride_ams2_size = arg.stride // arg.aspect_ratio
+    dict_for_archive_init = {}
+    dict_for_archive_init["sar_names"] = sar_names
+    dict_for_archive_init["nersc"] = nersc
+    dict_for_archive_init["datapath"] = arg.input_dir
+    dict_for_archive_init["window_size"] = window_size
+    dict_for_archive_init["window_size_amsr2"] = window_size_amsr2
+    dict_for_archive_init["stride_sar_size"] = arg.stride
+    dict_for_archive_init["stride_ams2_size"] = stride_ams2_size
+    dict_for_archive_init["step_sar"] = arg.step_resolution_sar
+    dict_for_archive_init["step_output"] = arg.step_resolution_output
+    dict_for_archive_init["aspect_ratio"] = arg.aspect_ratio
+    dict_for_archive_init["rm_swath"] = arg.rm_swath
+    dict_for_archive_init["amsr_labels"] = amsr_labels
+    dict_for_archive_init["distance_threshold"] = arg.distance_threshold
+    return dict_for_archive_init
 
 def create_model(self):
     """
@@ -215,10 +141,10 @@ def create_model(self):
     self.model.compile(optimizer=opt, loss='mse', metrics=['accuracy'])
 
 class Configure():
-    create_model = create_model
-    input_var_names = ['nersc_sar_primary', 'nersc_sar_secondary']
-    output_var_name = 'CT'
-    amsr2_var_names = ['btemp_6_9h','btemp_6_9v']
+    create_model = None
+    input_var_names = None
+    output_var_name = None
+    amsr2_var_names = None
 
     def __init__(self, archive):
         self.archive = archive
