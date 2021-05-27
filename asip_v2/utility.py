@@ -63,10 +63,10 @@ def postprocess_the_args(arg):
     postprocess the args based on the received values and return 'dict_for_archive_init'
     """
     if arg.window_size % arg.aspect_ratio:
-        raise argparse.ArgumentError(arg.window_size,
-                        f"Window size must be dividable to value of aspect_ratio ={arg.aspect_ratio}")
+        raise argparse.ArgumentTypeError(
+                        f"Window size must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
     if arg.stride % arg.aspect_ratio:
-        raise argparse.ArgumentError(arg.stride,
+        raise argparse.ArgumentTypeError(
                             f"Stride must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
     window_size_amsr2 = (arg.window_size // arg.aspect_ratio, arg.window_size // arg.aspect_ratio)
     window_size = (arg.window_size, arg.window_size)
@@ -200,8 +200,8 @@ class Configure():
         self.training_generator = self.DataGenerator_(self.partition['train'], **self.params)
         self.validation_generator = self.DataGenerator_(self.partition['validation'], **self.params)
 
-    def calc_dims(self):
-        raise NotImplementedError('The calc_dims() method was not implemented')
+    def calculate_dims(self):
+        raise NotImplementedError('The calculate_dims() method was not implemented')
 
     def filling_id_list(self):
         raise NotImplementedError('The filling_id_list() method was not implemented')

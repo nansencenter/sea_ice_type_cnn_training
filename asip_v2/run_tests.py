@@ -1,9 +1,13 @@
 import unittest
 
-from tests.data_generator_tests import DataGeneratorTestCases
-from tests.utility_tests import (InitializationTestCases, ConfigureTestCases,
-                                FileBasedConfigureTestCases, MemoryBasedConfigureTestCases)
-from tests.archive_tests import ArchiveTestCases
+#from tests.test_data_generator import DataGeneratorTestCases
+from tests.test_utility import UtilityFunctionsTestCases
+from tests.test_utility import ConfigureTestCases
+#from tests.test_archive import ArchiveTestCases
+
+
+#from tests.test_train_model import FileBasedConfigureTestCases
+#from tests.test_apply_model import MemoryBasedConfigureTestCases
 
 if __name__ == '__main__':
     unittest.main(failfast=True)

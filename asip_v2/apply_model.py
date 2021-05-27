@@ -93,7 +93,7 @@ class MemoryBasedConfigure(Configure):
                         self.set_path_for_reconstruct(self.DATAPATH), "reconstructs_folder"
                                     )
         if not isdir(self.reconstruct_path):
-            os.mkdir(self.reconstruct_path)
+            os.makedirs(self.reconstruct_path)
 
     @staticmethod
     def set_path_for_reconstruct(x):
