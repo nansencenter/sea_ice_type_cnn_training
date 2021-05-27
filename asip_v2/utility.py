@@ -10,13 +10,6 @@ from tensorflow.keras.models import Model
 
 from archive import Archive
 
-def parse_common_args():
-    """Instantiates and creates common arguments of parser which works with 'argparse' of python."""
-    parser = argparse.ArgumentParser(description='Process the arguments of script')
-    parser.add_argument()
-
-    return parser
-
 def between_zero_and_one_float_type(arg):
     """ Type function for argparse - a float within some predefined bounds """
     try:
@@ -38,30 +31,30 @@ def common_parser():
     parser = argparse.ArgumentParser(description='Process the arguments of script')
     parser.add_argument('input_dir', type=str, help="Path to directory with input netCDF files")
     parser.add_argument(
-        '-r', '--aspect_ratio', required=True, type=int,
+        '-r', '--aspect_ratio', required=False, type=int, default=50,
         help="The ration between the cell size of primary and secondary input of ML model. stride"
         " and window_size must be dividable to it.")
     parser.add_argument(
-        '-w', '--window_size', required=False, type=int,default=700,
+        '-w', '--window_size', required=False, type=int, default=700,
         help="window size for batching calculation(must be dividable to 50)")
     parser.add_argument(
-        '-swa','--rm_swath', required=False, type=int,default=0,
+        '-swa','--rm_swath', required=False, type=int, default=0,
         help="threshold value for comparison with file.aoi_upperleft_sample to border the calculation")
     parser.add_argument(
         '-n', '--noise_method', required=False, type=type_for_nersc_noise, default="nersc_",
         help="the method that error calculation had been used for error.Leave as empty string '' for"
                     "ESA noise corrections or as 'nersc_' for the Nansen center noise correction.")
     parser.add_argument(
-        '-d','--distance_threshold', required=False, type=int,default=0,
+        '-d','--distance_threshold', required=False, type=int, default=0,
         help="threshold for distance from land in mask calculation")
     parser.add_argument(
-        '-s', '--stride', required=False, type=int,default=700,
+        '-s', '--stride', required=False, type=int, default=700,
         help="stride for batching calculation(must be dividable to 50)")
     parser.add_argument(
-        '-a','--step_resolution_sar', required=False, type=int,default=1,
+        '-a','--step_resolution_sar', required=False, type=int, default=1,
         help="step for resizing the sar data")
     parser.add_argument(
-        '-b','--step_resolution_output', required=False, type=int,default=1,
+        '-b','--step_resolution_output', required=False, type=int, default=1,
         help="step for resizing the output variables")
     return parser
 

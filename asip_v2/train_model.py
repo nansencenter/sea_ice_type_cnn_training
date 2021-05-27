@@ -56,34 +56,6 @@ class FileBasedConfigure(Configure):
                       )
         self.model.save("final_model")
 
-    # define a customize model structure by uncommenting this function and define a new model
-    #def create_model(self):
-    #    """
-    #    create a keras model based on self.params variable (just for setting the input size)
-    #    """
-    #    input_ = layers.Input(shape=self.params['dims_input'])
-    #    input_2 = layers.Input(shape=self.params['dims_amsr2'])
-    #    x = layers.BatchNormalization()(input_)
-    #    x = layers.Conv2D(8, (3, 3), padding='same', activation='relu')(x)
-    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
-    #    x = layers.Conv2D(16, (3, 3), padding='same', activation='relu')(x)
-    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
-    #    x = layers.Conv2D(32, (3, 3), padding='same', activation='relu')(x)
-    #    x = layers.AveragePooling2D(pool_size=(7,7), strides=(6,6))(x)
-    #    x = layers.AveragePooling2D(pool_size=(2,2), strides=(2,2))(x)
-    #    x = layers.Concatenate()([x, input_2])
-    #    x = layers.UpSampling2D(size=(10, 10))(x)
-    #    x = layers.UpSampling2D(size=(5, 5))(x)
-    #    #x = layers.Conv2DTranspose(filters=16, kernel_size=3, strides=2, padding='same')(x)
-    #    #x = layers.Conv2DTranspose(filters=8, kernel_size=3, strides=2, padding='same')(x)
-    #    x = layers.Conv2D(filters=1, kernel_size=1, strides=1, padding='same')(x)
-    #    self.model = Model(
-    #        inputs=[input_, input_2], outputs=x)
-    #    opt = tf.keras.optimizers.Adam(
-    #        learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False
-    #        )
-    #    self.model.compile(optimizer=opt, loss='mse', metrics=['accuracy'])
-
     @staticmethod
     def set_path_for_reconstruct(x):
         """helper function for 'set_the_folder_of_reconstructed_files' function."""
@@ -155,7 +127,7 @@ def read_input_params_for_training():
         '-bs','--batch_size', required=False, type=int,
         help="batch size for data generator")
     parser.add_argument(
-        '-p','--precentage_of_training', required=False, type=between_zero_and_one_float_type,
+        '-p','--precentage_of_training', required=True, type=between_zero_and_one_float_type,
         help="percentage of IDs that should be considered as training data (between 0,1). "
              "'1-precentage_of_training' fraction of data is considered as validation data.")
     arg = parser.parse_args()
