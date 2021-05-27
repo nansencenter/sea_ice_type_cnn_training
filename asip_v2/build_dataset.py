@@ -1,35 +1,40 @@
 import os
 import sys
 import argparse
-
+import argparse
 import netCDF4 as nc
 import numpy as np
 from skimage.util.shape import view_as_windows
 
-from archive import Archive, SarBatches, OutputBatches, Amsr2Batches
-from utility import read_input_params
+from archive import Archive
+from utility import type_for_nersc_noise, common_parser, postprocess_the_args
 
+def read_input_params_for_building():
+    """
+    read the input data based on the command line arguments and return an instance of archive class
+    """
+    parser = common_parser()
+    parser.add_argument(
+        '-o','--output_dir', type=str, required=True,
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
+        help="Path to directory with output files (npz files)",)
+    arg = parser.parse_args()
+    dict_for_archive_init = postprocess_the_args(arg)
+    dict_for_archive_init["apply_instead_of_training"] = False
+    dict_for_archive_init["outpath"] = arg.output_dir
+    return Archive(**dict_for_archive_init)
 
 def main():
 
-    archive_ = read_input_params()
+    archive_ = read_input_params_for_building()
     archive_.get_unprocessed_files()
     for i, filename in enumerate(archive_.files):
         print("Starting %d out of %d unprocessed files" % (i, len(archive_.files)))
         fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
-        if archive_.check_file_healthiness(fil, filename):
-            archive_.read_icechart_coding(fil, filename)
-            archive_.calculate_mask(fil)
-            archive_.calculate_batches_for_masks()
-            for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
-                obj = cls_(archive_)
-                obj.pad_and_batch(fil)
-                archive_.PROP.update(obj.calculate_variable_ML())
-                del obj
-            del archive_.mask_batches_amsr2, archive_.mask_batches
-            # saving section
-            archive_.write_scene_files_and_reset_archive_PROP()
-            archive_.update_processed_files(i)
+        archive_.process_dataset(fil, filename)
+        # saving section
+        archive_.write_batches()
+        archive_.update_processed_files(i)
         del fil
 
 
