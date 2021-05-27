@@ -187,7 +187,7 @@ class Archive():
                  memory_mode=None,
                  shuffle_on_epoch_end=None,
                  shuffle_for_training=None,
-                 precentage_of_training=None,
+                 percentage_of_training=None,
                  beginning_day_of_year=None,
                  ending_day_of_year=None,
                  batch_size=None,
@@ -208,7 +208,7 @@ class Archive():
         self.apply_instead_of_training = apply_instead_of_training
         self.shuffle_on_epoch_end = shuffle_on_epoch_end
         self.shuffle_for_training = shuffle_for_training
-        self.precentage_of_training = precentage_of_training
+        self.percentage_of_training = percentage_of_training
         self.beginning_day_of_year = beginning_day_of_year
         self.ending_day_of_year = ending_day_of_year
         self.batch_size = batch_size

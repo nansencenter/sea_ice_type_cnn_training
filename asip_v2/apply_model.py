@@ -143,7 +143,7 @@ def read_input_params_for_applying():
     dict_for_archive_init["apply_instead_of_training"] = True
     dict_for_archive_init["shuffle_on_epoch_end"] = False
     dict_for_archive_init["shuffle_for_training"] = False
-    dict_for_archive_init["precentage_of_training"] = 1.
+    dict_for_archive_init["percentage_of_training"] = 1.
     dict_for_archive_init["batch_size"] = arg.batch_size
     return Archive(**dict_for_archive_init)
 

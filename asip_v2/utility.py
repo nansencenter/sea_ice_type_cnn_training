@@ -146,7 +146,7 @@ class Configure():
         self.ENDING_DAY_OF_YEAR =  archive.ending_day_of_year
         self.shuffle_on_epoch_end = archive.shuffle_on_epoch_end
         self.shuffle_for_training = archive.shuffle_for_training
-        self.precentage_of_training = archive.precentage_of_training
+        self.percentage_of_training = archive.percentage_of_training
         self.DATAPATH = archive.DATAPATH
         self.OUTPATH = archive.OUTPATH
         self.WINDOW_SIZE = archive.WINDOW_SIZE
@@ -170,12 +170,12 @@ class Configure():
     def divide_id_list_into_partition(self):
         """
         divide the id list into 'training' and 'validation' partition with the help of
-        'precentage_of_training'.
+        'percentage_of_training'.
         """
         if self.shuffle_for_training:
             random.shuffle(self.id_list)
-        train_sublist_id_list = self.id_list[: int(len(self.id_list) * self.precentage_of_training)]
-        valid_sublist_id_list = self.id_list[int(len(self.id_list) * self.precentage_of_training) :]
+        train_sublist_id_list = self.id_list[: int(len(self.id_list) * self.percentage_of_training)]
+        valid_sublist_id_list = self.id_list[int(len(self.id_list) * self.percentage_of_training) :]
         print(f"total number of training samples: {len(train_sublist_id_list)}")
         print(f"total number of validation samples: {len(valid_sublist_id_list)}")
         # Datasets

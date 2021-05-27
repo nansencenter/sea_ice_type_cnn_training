@@ -127,15 +127,15 @@ def read_input_params_for_training():
         '-bs','--batch_size', required=False, type=int,
         help="batch size for data generator")
     parser.add_argument(
-        '-p','--precentage_of_training', required=True, type=between_zero_and_one_float_type,
+        '-p','--percentage_of_training', required=True, type=between_zero_and_one_float_type,
         help="percentage of IDs that should be considered as training data (between 0,1). "
-             "'1-precentage_of_training' fraction of data is considered as validation data.")
+             "'1-percentage_of_training' fraction of data is considered as validation data.")
     arg = parser.parse_args()
     return Archive(
                    outpath=arg.output_dir,
                    shuffle_on_epoch_end=arg.shuffle_on_epoch_end,
                    shuffle_for_training=arg.shuffle_for_training,
-                   precentage_of_training=arg.precentage_of_training,
+                   percentage_of_training=arg.percentage_of_training,
                    beginning_day_of_year=arg.beginning_day_of_year,
                    ending_day_of_year=arg.ending_day_of_year,
                    batch_size=arg.batch_size,
