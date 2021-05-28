@@ -89,16 +89,10 @@ class MemoryBasedConfigure(Configure):
         hierarchy (for file-based config) in order not to put the reconstructed ones and npz files
         in the same folder. This function is only for folder management.
         """
-        self.reconstruct_path = join(
-                        self.set_path_for_reconstruct(self.DATAPATH), "reconstructs_folder"
+        self.reconstruct_path = join(self.DATAPATH, "reconstructs_folder"
                                     )
         if not isdir(self.reconstruct_path):
             os.makedirs(self.reconstruct_path)
-
-    @staticmethod
-    def set_path_for_reconstruct(x):
-        """helper function for 'set_the_folder_of_reconstructed_files' function."""
-        return x
 
     def calculate_dims(self):
         """ based on the input arguments, the dimensions will be set. """

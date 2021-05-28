@@ -1,10 +1,12 @@
-import unittest
-import unittest.mock as mock
-import numpy as np
-from os.path import join, isdir
 import sys
 import tempfile
+import unittest
+import unittest.mock as mock
+from os.path import isdir, join
+
+import numpy as np
 from apply_model import MemoryBasedConfigure, read_input_params_for_applying
+
 
 class MemoryBasedConfigureTestCases(unittest.TestCase):
     """ Tests for MemoryBasedConfigure"""

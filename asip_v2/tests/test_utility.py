@@ -1,13 +1,15 @@
-import unittest
-import unittest.mock as mock
-import numpy as np
 import argparse
 import datetime
-import tempfile
-from os.path import join, isdir
 import sys
-from utility import (Configure, postprocess_the_args, common_parser, between_zero_and_one_float_type,
-                        type_for_nersc_noise)
+import tempfile
+import unittest
+import unittest.mock as mock
+from os.path import isdir, join
+
+import numpy as np
+from utility import (Configure, between_zero_and_one_float_type, common_parser,
+                     postprocess_the_args, type_for_nersc_noise)
+
 
 class UtilityFunctionsTestCases(unittest.TestCase):
     """Tests for functions inside utilities"""
