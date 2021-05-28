@@ -156,7 +156,7 @@ class Configure():
     def setup_generator(self):
         """
         This method is for setting up the generator based on the args of input and the config.
-        Four steps of it are divided in four functions. ID list is the list of IDs that consists of
+        Five steps of it are divided in five functions. ID list is the list of IDs that consists of
         All training and validation data for ML purposes.
         ID list will be the value corresponding to '_locs' of PROP dictionary for memory-based
         config. It will be the name of the 'npz' files files for file-based config.
