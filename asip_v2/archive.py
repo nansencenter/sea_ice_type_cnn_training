@@ -281,7 +281,7 @@ class Archive():
 
     @staticmethod
     def get_the_mask_of_sar_size_data(sar_names, fil, distance_threshold):
-        mask_sar_size = False
+        mask_sar_size = np.zeros(fil[sar_names[0]][:].shape, bool)
         for str_ in sar_names+['polygon_icechart']:
             mask = np.ma.getmaskarray(fil[str_][:])
             mask_sar_size = np.ma.mask_or(mask_sar_size, mask, shrink=False)
