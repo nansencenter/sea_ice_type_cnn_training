@@ -281,29 +281,30 @@ class Archive():
 
     @staticmethod
     def get_the_mask_of_sar_size_data(sar_names, fil, distance_threshold):
+        mask_sar_size = False
         for str_ in sar_names+['polygon_icechart']:
             mask = np.ma.getmaskarray(fil[str_][:])
-            mask = np.ma.mask_or(mask, mask)
+            mask_sar_size = np.ma.mask_or(mask_sar_size, mask, shrink=False)
             # not only mask itself, but also being finite is import for the data. Thus, another
             # mask also should consider and apply with 'mask_or' of numpy
             mask_isfinite = ~np.isfinite(fil[str_])
-            mask = np.ma.mask_or(mask, mask_isfinite)
+            mask_sar_size = np.ma.mask_or(mask_sar_size, mask_isfinite, shrink=False)
         # ground data is also masked
-        mask_sar_size = np.ma.mask_or(mask, np.ma.getdata(
-            fil['distance_map']) <= distance_threshold)
+        mask_sar_size = np.ma.mask_or(mask_sar_size, np.ma.getdata(fil['distance_map']) <=
+                                                                                 distance_threshold)
         return mask_sar_size
 
-    @staticmethod
-    def get_the_mask_of_amsr2_data(amsr_labels, fil):
+    def get_the_mask_of_amsr2_data(self, amsr_labels, fil):
+        mask_amsr = False
         for amsr_label in amsr_labels:
-            mask_amsr = np.ma.getmaskarray(fil[amsr_label])
-            mask_amsr = np.ma.mask_or(mask_amsr, mask_amsr)
+            mask = np.ma.getmaskarray(fil[amsr_label])
+            mask_amsr = np.ma.mask_or(mask_amsr, mask, shrink=False)
             mask_isfinite = ~np.isfinite(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask_isfinite, shrink=False)
         shape_mask_amsr_0, shape_mask_amsr_1 = mask_amsr.shape[0], mask_amsr.shape[1]
         # enlarging the mask of amsr2 data to be in the size of mask sar data
-        mask_amsr = np.repeat(mask_amsr, 50, axis=0)
-        mask_amsr = np.repeat(mask_amsr, 50, axis=1)
+        mask_amsr = np.repeat(mask_amsr, self.ASPECT_RATIO, axis=0)
+        mask_amsr = np.repeat(mask_amsr, self.ASPECT_RATIO, axis=1)
         return mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1
 
     @staticmethod
