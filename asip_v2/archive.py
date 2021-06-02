@@ -286,7 +286,7 @@ class Archive():
             mask = np.ma.mask_or(mask, mask)
             # not only mask itself, but also being finite is import for the data. Thus, another
             # mask also should consider and apply with 'mask_or' of numpy
-            mask_isfinite = np.ma.getmaskarray(~np.isfinite(fil[str_]))
+            mask_isfinite = ~np.isfinite(fil[str_])
             mask = np.ma.mask_or(mask, mask_isfinite)
         # ground data is also masked
         mask_sar_size = np.ma.mask_or(mask, np.ma.getdata(
@@ -298,7 +298,7 @@ class Archive():
         for amsr_label in amsr_labels:
             mask_amsr = np.ma.getmaskarray(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask_amsr)
-            mask_isfinite = np.ma.getmaskarray(~np.isfinite(fil[amsr_label]))
+            mask_isfinite = ~np.isfinite(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask_isfinite, shrink=False)
         shape_mask_amsr_0, shape_mask_amsr_1 = mask_amsr.shape[0], mask_amsr.shape[1]
         # enlarging the mask of amsr2 data to be in the size of mask sar data
