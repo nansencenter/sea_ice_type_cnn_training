@@ -74,7 +74,7 @@ If you want to run the training with scenes that are belong to a specific season
 Train the tensorflow can be done by writing this command in order to training from npz files of *fold2* folder:
 
 ```python
-python train_model.py -o /fold2 -n nersc_ -bs 4 -p 0.8 -see -sft
+python train_model.py -o /fold2 -bs 4 -p 0.8 -see -sft
 ```
 In the above example the npz files are being read from `/fold2` folder.
 
