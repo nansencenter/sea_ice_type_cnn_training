@@ -10,9 +10,9 @@ from train_model import FileBasedConfigure, read_input_params_for_training
 class FileBasedConfigureTestCases(unittest.TestCase):
     """ Tests for FileBasedConfigure"""
     @mock.patch('train_model.np.load', return_value={'nersc_sar_primary':np.zeros([10, 20]),
-                                                 'CT':np.zeros([30, 40]),
-                                                 'btemp_6_9h':np.zeros([50, 60])})
-    @mock.patch('archive.Archive.__init__', return_value=None)
+                                                     'CT':np.zeros([30, 40]),
+                                                     'btemp_6_9h':np.zeros([50, 60])})
+    @mock.patch('train_model.Archive.__init__', return_value=None)
     def test_function_calculate_dims(self, mock_archive, mock_np_load):
         """ shall set the correct dims """
         config_ = FileBasedConfigure(archive=mock_archive)
@@ -22,7 +22,7 @@ class FileBasedConfigureTestCases(unittest.TestCase):
         self.assertEqual(config_.dims_output, (30, 40))
         self.assertEqual(config_.dims_amsr2, (50, 60))
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('train_model.Archive.__init__', return_value=None)
     def test_function_filling_id_list(self, mock_archive):
         """ shall set the correct npz files based on the time """
         config_ = FileBasedConfigure(archive=mock_archive)
@@ -38,7 +38,7 @@ class FileBasedConfigureTestCases(unittest.TestCase):
                          ['/workspaces/ASIP-v2-builder/out/20180410T084537_00-0_0.npz',
                           '/workspaces/ASIP-v2-builder/out/20190410T084537_01-0_1.npz'])
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('train_model.Archive.__init__', return_value=None)
     def test_function_instantiate_image_with_zeros_and_get_the_patch_locations_of_image(self,
                                                                                       mock_archive):
         """ shall instantiate the image array with proper size and set the patch locations"""
@@ -53,12 +53,11 @@ class FileBasedConfigureTestCases(unittest.TestCase):
         # The result must be (5+1)*2, (9+1)*3 for below line:
         self.assertEqual(config_.img.shape, (12, 30))
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('train_model.Archive.__init__', return_value=None)
     def test_function_read_input_params_for_training(self, mock_archive):
         """input from sys.argv should be read correctly"""
         sys.argv = ['','-o', 'dir_name', '-see', '-bd', '7', '-ed', '90', '-p', '.7', '-bs','4']
         read_input_params_for_training()
-        W=0
         mock_archive.assert_called_with(
                             apply_instead_of_training=False, batch_size=4, beginning_day_of_year=7,
                             ending_day_of_year=90, outpath='dir_name', percentage_of_training=0.7,

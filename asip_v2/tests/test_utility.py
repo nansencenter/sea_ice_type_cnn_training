@@ -13,6 +13,7 @@ from utility import (Configure, between_zero_and_one_float_type, common_parser,
 
 class UtilityFunctionsTestCases(unittest.TestCase):
     """Tests for functions inside utilities"""
+
     def test_common_parser_and_postprocess_the_args(self):
         """ common parser shall correctly set the 'dict_for_archive_init' """
         sys.argv = ['', "dir_name", '-n', 'nersc_', '-w', '700', '-s', '700', '-r', '50']
@@ -87,7 +88,7 @@ class UtilityFunctionsTestCases(unittest.TestCase):
 class ConfigureTestCases(unittest.TestCase):
     """tests for Configure methods in utilities"""
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('utility.Archive.__init__', return_value=None)
     @mock.patch('utility.Configure.set_params')
     @mock.patch('utility.Configure.divide_id_list_into_partition')
     @mock.patch('utility.Configure.instantiate_generators_with_associated_partition')
@@ -104,18 +105,19 @@ class ConfigureTestCases(unittest.TestCase):
         divide_id_list.assert_called_once()
         mock_set_para.assert_called_once()
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_divide_id_list_into_partition(self, mock_archive):
         """ Test the divition action of id_list into 'train' and 'validation' parts """
         config_ = Configure(archive=mock_archive)
-        config_.id_list = ["bar","foo"]
+        config_.id_list = ["bar", "foo"]
         config_.shuffle_for_training = False
         config_.precentage_of_training = 0.5
         config_.divide_id_list_into_partition()
-        self.assertEqual(config_.partition,{'train': ['bar'], 'validation': ['foo']})
+        self.assertEqual(config_.partition, {'train': ['bar'], 'validation': ['foo']})
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_set_params(self, mock_archive):
+        """self.params must be set correctly for the class"""
         config_ = Configure(archive=mock_archive)
         config_.dims_input = (700, 700)
         config_.dims_output = (700, 700)
@@ -138,8 +140,9 @@ class ConfigureTestCases(unittest.TestCase):
                                          }
                         )
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_instantiate_generator(self, mock_archive):
+        """generators must be instantiated with associated partition"""
         config_ = Configure(archive=mock_archive)
         config_.partition = {'train': ['bar'], 'validation': ['foo']}
         config_.params = {'fake_param':''}

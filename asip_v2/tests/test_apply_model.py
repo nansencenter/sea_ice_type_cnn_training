@@ -10,7 +10,7 @@ from apply_model import MemoryBasedConfigure, read_input_params_for_applying
 
 class MemoryBasedConfigureTestCases(unittest.TestCase):
     """ Tests for MemoryBasedConfigure"""
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_calculate_dims(self, mock_archive):
         """ shall set the correct dims """
         config_ = MemoryBasedConfigure(archive=mock_archive)
@@ -34,7 +34,7 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
         self.assertEqual(config_.id_list, [(0, 0), (0, 1), (0, 2), (0, 3)])
 
     @mock.patch('apply_model.Dataset', return_value={'btemp_6.9h':np.zeros([8,9])})
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_instantiate_image(self, mock_archive, mock_Dataset):
         """ shall instantiate the image array with proper size and set the patch locations"""
         config_ = MemoryBasedConfigure(archive=mock_archive)
@@ -48,7 +48,7 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
 
     @mock.patch('apply_model.np.savez')
     @mock.patch('apply_model.MemoryBasedConfigure.instantiate_image_with_zeros_and_get_the_patch_locations_of_image')
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_reconstruct_the_image_and_reset_archive_PROP(self, mock_archive,
                                                                    mock_instantiate,
                                                                     mock_savez
@@ -71,14 +71,13 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
         # archive PROP must be reset at the end
         self.assertEqual(config_.archive.PROP, {})
 
-
     @mock.patch('apply_model.MemoryBasedConfigure.set_the_folder_of_reconstructed_files')
     @mock.patch('apply_model.MemoryBasedConfigure.setup_generator')
     @mock.patch('apply_model.MemoryBasedConfigure.create_model')
     @mock.patch('apply_model.MemoryBasedConfigure.predict_by_model')
     @mock.patch('apply_model.MemoryBasedConfigure.reconstruct_the_image_and_reset_archive_PROP')
     @mock.patch('os.listdir', return_value=['20190411T084522_.nc'])
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_apply_model_for_memory_based_config(self, mock_archive,  mock_listdir, mock_reconstruct,
                                         mock_predict, mock_create, mock_setup, mock_set_the_folder):
         """full address shall be in the 'list of names' and the date shall be in 'scene_date'"""
@@ -93,10 +92,10 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
         self.assertEqual(['/bar/20190411T084522_.nc'], config_.list_of_names)
         self.assertEqual('20190411T084522', config_.scene_date)
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_set_the_folder_of_reconstructed_files(self, mock_archive):
         """
-        1. shall return the proper name in 'reconstruct_path' attribue with "reconstructs_folder"
+        1. shall return the proper name in 'reconstruct_path' attribute with "reconstructs_folder"
         at the end of the name.
         2. shall create a folder with this name (one level up in foldering for file based config)
         """
@@ -108,7 +107,7 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
         self.assertTrue(isdir(join(config_.DATAPATH, "reconstructs_folder")))
         temp_path.cleanup()
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_set_params(self, mock_archive):
         """config_.params should be set correctly"""
         config_ = MemoryBasedConfigure(archive=mock_archive)
@@ -135,7 +134,7 @@ class MemoryBasedConfigureTestCases(unittest.TestCase):
                                          }
                         )
 
-    @mock.patch('archive.Archive.__init__', return_value=None)
+    @mock.patch('apply_model.Archive.__init__', return_value=None)
     def test_function_read_input_params_for_applying(self, mock_archive):
         """input from sys.argv should be read correctly"""
         sys.argv = ['', "dir_name", '-n', 'nersc_', '-w', '700', '-s', '700', '-r', '50', '-bs','4']
