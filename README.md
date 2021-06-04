@@ -9,33 +9,13 @@ The order of execution of different parts of the code is as follow:
 
 # Requirement
 just run the following command in your environment in order to install the requirements:
-
-`pip install -r requirements.txt`
+```python
+pip install -r requirements.txt
+```
 The users of Microsoft VScode can easily open the remote development container with the help of `.devcontainer` folder and Dockerfile
 # Usage
-This code uses [python argparse](https://docs.python.org/3/library/argparse.html) which the details of developed arguments are shown in the table below. They can be given to the command above as an argument of command:
-
-| Argument short form | Argument long form  | default value | Description
-| ------------------- | --------------------|-------------- | --------------
-|  []                 |  []                 |  [no default]| The first and the only positional argument is the path to directory with input netCDF files needed for data building or applying the trained model (inference)
-|  -o                 |  --output_dir       | []      |Path to directory with output files
-|  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error. Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
-|  -w                 |   --window_size     |  700 | window size (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the size of image samples that has been used for ML training step)
-|  -s                 |   --stride          |  700 | stride (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the stride that determines the overlapping areas between image samples for ML training step)
-|  -r                 |   --aspect_ratio     |  50 | The ration between the cell size of primary and secondary input of ML model. stride and window_size must be dividable to it.
-|  -swa                 |   --rm_swath        |  0    |threshold value for comparison with netCDF file.aoi_upperleft_sample to border the calculation
-|  -d                 |   --distance_threshold |  0  |threshold for distance from land in mask calculation
-|  -a                 |   --step_resolution_sar | 1  |step for resizing the sar data (default value leads to no resizing)
-|  -b                 |   --step_resolution_output|1 |step for resizing the ice chart data (default value leads to no resizing)
-|  -see                |   --shuffle_on_epoch_end  |  False (in the case of absence in the arguments) | Flag for Shuffling the training subset of IDs at the end of every epoch during the training
-|  -sft                |   --shuffle_for_training  |  False (in the case of absence in the arguments) | Flag for Shuffling the list of IDs before dividing it into two 'training' and 'validation' subsets
-|  -bd                |   --beginning_day_of_year          |  0 | min threshold value for comparison with scenedate of files for considering a limited subset of files based on their counts from the first of january of the same year
-|  -ed                |   --ending_day_of_year          |  365 | max threshold value for comparison with scenedate of files for considering a limited subset of files based on their counts from the first of january of the same year
-|  -p                |   --percentage_of_training          |  [] | percentage of IDs that should be considered as training data (between 0,1). '1-percentage_of_training' fraction of data is considered as validation data. NOT APPLICABLE for building the data into npz files.
-|  -bs               |   --batch_size          |  [] | batch size for data generator
-
-
-Each of three scripts including `train_model.py`, `apply_model.py` and `build_dataset.py` can show each row of above table belong to them by placing `-h` after their name. For example, **python train_model.py -h** shows the ones that belong to training activities.
+This code uses [python argparse](https://docs.python.org/3/library/argparse.html) for reading the input from command line.
+Each of three scripts including `train_model.py`, `apply_model.py` and `build_dataset.py` can show which argument belongs to them by placing `-h` after their name. For example, **python train_model.py -h** shows the ones that belong to training activities.
 # Execute the data building
 By just giving the full absolute address of the folder that contains all of the uncompressed .nc files of ASIP data, data building part of code is able to build the data based on those files and make them ready for further Machine learning training.
 
@@ -58,6 +38,21 @@ As an example, for the case of building data from **/fold1** folder and store th
 ```python
 python build_dataset.py /fold1 -o /fold2 -n nersc_ -w 400 -s 400
 ```
+Table below shows how the arguments are working:
+___
+| Argument short form | Argument long form  | default value | Description
+| ------------------- | --------------------|-------------- | --------------
+|  []                 |  []                 |  [no default]| The first and the only positional argument is the path to directory with input netCDF files needed for data building or applying the trained model (inference)
+|  -o                 |  --output_dir       | [no default]      |Path to directory for output of building (.npz files)
+|  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error. Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
+|  -w                 |   --window_size     |  700 | window size (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the size of image samples that has been used for ML training step)
+|  -s                 |   --stride          |  700 | stride (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the stride that determines the overlapping areas between image samples for ML training step)
+|  -r                 |   --aspect_ratio     |  50 | The ration between the cell size of primary and secondary input of ML model. stride and window_size must be dividable to it.
+|  -swa                 |   --rm_swath        |  0    |threshold value for comparison with netCDF file.aoi_upperleft_sample to border the calculation
+|  -d                 |   --distance_threshold |  0  |threshold for distance from land in mask calculation
+|  -a                 |   --step_resolution_sar | 1  |step for resizing the sar data (default value leads to no resizing)
+|  -b                 |   --step_resolution_output|1 |step for resizing the ice chart data (default value leads to no resizing)
+___
 
 
 # Execute the tensorflow training
@@ -78,6 +73,19 @@ python train_model.py -o /fold2 -bs 4 -p 0.8 -see -sft
 ```
 In the above example the npz files are being read from `/fold2` folder.
 
+Table below shows how the arguments are working:
+___
+| Argument short form | Argument long form  | default value | Description
+| ------------------- | --------------------|-------------- | --------------
+|  -o                 |  --output_dir       | [no default]   |Path to directory with output files (.npz files as the output of building data)
+|  -see                |   --shuffle_on_epoch_end  |  False (in the case of absence in the arguments) | Flag for Shuffling the training subset of IDs at the end of every epoch during the training
+|  -sft                |   --shuffle_for_training  |  False (in the case of absence in the arguments) | Flag for Shuffling the list of IDs before dividing it into two 'training' and 'validation' subsets
+|  -bd                |   --beginning_day_of_year          |  0 | min threshold value for comparison with scenedate of files for considering a limited subset of files based on their counts from the first of january of the same year
+|  -ed                |   --ending_day_of_year          |  365 | max threshold value for comparison with scenedate of files for considering a limited subset of files based on their counts from the first of january of the same year
+|  -p                |   --percentage_of_training          |  [] | percentage of IDs that should be considered as training data (between 0,1). '1-percentage_of_training' fraction of data is considered as validation data.
+|  -bs               |   --batch_size          |  [] | batch size for data generator
+___
+
 # Execute the inference code
 The output of the ML network is the patches of image, not the whole image with original size. For seeing the result of network (as a whole image,i.e. a scene) after training, `apply_model.py` can be used. To do this, just like previous example of command line of training, we can run the below command in the command line:
 ```python
@@ -94,11 +102,25 @@ This mode is executed in memory based manner. In this case, only the 'nc' files 
 
 > Hint: it is important to give values of `window_size`, `stride` and `batch size` identical to those of data building calculation. Otherwise, applying the model is meaningless.
 
-A folder named `reconstructs_folder` will be created at the same level of input directory and the reconstructed files will be saved inside that folder.
-
+A folder named `reconstructs_folder` will be created at the same level of *output_dir* and the reconstructed files will be saved inside that folder.
+___
+Table below shows how the arguments are working:
+| Argument short form | Argument long form  | default value | Description
+| ------------------- | --------------------|-------------- | --------------
+|  []                 |  []                 |  [no default]| The first and the only positional argument is the path to directory with input netCDF files needed for data building or applying the trained model (inference)
+|  -n                 |    --noise_method   |'nersc_'|the method that error calculation had  been used for error. Leave as empty string '' for ESA noise corrections or as 'nersc_' for the Nansen center noise correction.
+|  -w                 |   --window_size     |  700 | window size (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the size of image samples that has been used for ML training step)
+|  -s                 |   --stride          |  700 | stride (of sar and ice chart data) for batching calculation (must be dividable to aspect ratio,the ratio between the cell size of primary and secondary input of network)(This will be the stride that determines the overlapping areas between image samples for ML training step)
+|  -r                 |   --aspect_ratio     |  50 | The ration between the cell size of primary and secondary input of ML model. stride and window_size must be dividable to it.
+|  -swa                 |   --rm_swath        |  0    |threshold value for comparison with netCDF file.aoi_upperleft_sample to border the calculation
+|  -d                 |   --distance_threshold |  0  |threshold for distance from land in mask calculation
+|  -a                 |   --step_resolution_sar | 1  |step for resizing the sar data (default value leads to no resizing)
+|  -b                 |   --step_resolution_output|1 |step for resizing the ice chart data (default value leads to no resizing)
+|  -bs               |   --batch_size          |  [no default] | batch size for data generator
+___
 # Plotting the result of inference
 
-For plotting, unlike all pervious executions, you need to run it from outside the development container of VScode. It means you have to install `scipy` and `numpy` on your env and run the `show.py` with the python interpreter outside the container. This code can also be substituted with an interactive jupyter-notebook.
+For plotting, you can run a separate python script called `show.py`. You have to make sure that the dependencies are ready for this script. It means you have to install `scipy` and `numpy` on your env and run the `show.py`. This `show.py` code can also be substituted with an interactive jupyter-notebook.
 Plotting can be done by writing this command:
 
 ```python
