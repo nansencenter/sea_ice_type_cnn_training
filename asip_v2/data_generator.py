@@ -56,7 +56,7 @@ class DataGeneratorFrom_npz_File(DataGenerator):
 
         # Generate data
         for i, ID in enumerate(self.list_IDs_temp):
-            self.y[i,:,:,0] = np.load(ID).get(self.output_var_name)/100
+            self.y[i,:,:,0] = np.load(ID).get(self.output_var_name)
             for j, sar_name in enumerate(self.input_var_names):
                 self.X[i,:,:,j] = np.load(ID).get(sar_name)
             for j, amsr2_name in enumerate(self.amsr2_var_names):

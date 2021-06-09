@@ -63,10 +63,10 @@ def postprocess_the_args(arg):
     postprocess the args based on the received values and return 'dict_for_archive_init'
     """
     if arg.window_size % arg.aspect_ratio:
-        raise argparse.ArgumentError(arg.window_size,
-                        f"Window size must be dividable to value of aspect_ratio ={arg.aspect_ratio}")
+        raise argparse.ArgumentTypeError(
+                        f"Window size must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
     if arg.stride % arg.aspect_ratio:
-        raise argparse.ArgumentError(arg.stride,
+        raise argparse.ArgumentTypeError(
                             f"Stride must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
     window_size_amsr2 = (arg.window_size // arg.aspect_ratio, arg.window_size // arg.aspect_ratio)
     window_size = (arg.window_size, arg.window_size)
@@ -156,7 +156,7 @@ class Configure():
     def setup_generator(self):
         """
         This method is for setting up the generator based on the args of input and the config.
-        Four steps of it are divided in four functions. ID list is the list of IDs that consists of
+        Five steps of it are divided in five functions. ID list is the list of IDs that consists of
         All training and validation data for ML purposes.
         ID list will be the value corresponding to '_locs' of PROP dictionary for memory-based
         config. It will be the name of the 'npz' files files for file-based config.
@@ -200,8 +200,8 @@ class Configure():
         self.training_generator = self.DataGenerator_(self.partition['train'], **self.params)
         self.validation_generator = self.DataGenerator_(self.partition['validation'], **self.params)
 
-    def calc_dims(self):
-        raise NotImplementedError('The calc_dims() method was not implemented')
+    def calculate_dims(self):
+        raise NotImplementedError('The calculate_dims() method was not implemented')
 
     def filling_id_list(self):
         raise NotImplementedError('The filling_id_list() method was not implemented')

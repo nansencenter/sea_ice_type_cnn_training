@@ -82,6 +82,9 @@ class Batches:
         del template
         return PROP
 
+    def pading(self):
+        raise NotImplementedError('The pading() method was not implemented')
+
 
 class SarBatches(Batches):
     def __init__(self,archive_):
@@ -96,15 +99,14 @@ class SarBatches(Batches):
     def pading(self, values_array):
         return self.calculate_pading(values_array, np.float32, None)
 
-    def convert(self, values_array, element):
-        return values_array
-
     def resize(self, batches_array):
         """This function averages the values of pixel of 'batches_array' with the windows of
-        size 'self.step' by the help of uniform_filter of scipy. Next step of calculation is slicing
-        in order to get rid of values that are belong to overlapping area in the filter result.
+        size 'self.step' by the help of uniform_filter of scipy.
         for more information look at:
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.uniform_filter.html
+
+        Next step of calculation is slicing in order to get rid of values that are belong to
+        overlapping area in the filter result.
         """
         batches_array = uniform_filter(
                                         batches_array,
@@ -140,11 +142,12 @@ class OutputBatches(SarBatches):
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
         """
+        en_values_array = values_array.copy() # oroginal dictionary should not be changed
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
             # each loop changes all locations of values_array (that have the very
             # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            values_array[values_array == id_value] = np.byte(variable_belong_to_id[element])
-        return values_array
+            en_values_array[en_values_array == id_value] = np.byte(variable_belong_to_id[element])
+        return en_values_array
 
     def resize(self, batches_array):
         return Batches.resize(self, batches_array)
@@ -249,11 +252,11 @@ class Archive():
         if 'polygon_icechart' not in fil.variables:
             print(f"'polygon_icechart' should be in 'fil.variables'. for {filename}")
             return False
-        lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
         if not (self.AMSR_LABELS[0] in fil.variables):
             print(f"{filename},missing AMSR file")
             return False
-        elif ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
+        lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
+        if ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
                 (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.WINDOW_SIZE[1]):
             print(f"{filename},unmasked scene is too small")
             return False
@@ -295,7 +298,7 @@ class Archive():
         return mask_sar_size
 
     def get_the_mask_of_amsr2_data(self, amsr_labels, fil):
-        mask_amsr = False
+        mask_amsr = np.zeros(fil[amsr_labels[0]][:].shape, bool)
         for amsr_label in amsr_labels:
             mask = np.ma.getmaskarray(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask, shrink=False)

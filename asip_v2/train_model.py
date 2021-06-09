@@ -56,11 +56,6 @@ class FileBasedConfigure(Configure):
                       )
         self.model.save("final_model")
 
-    @staticmethod
-    def set_path_for_reconstruct(x):
-        """helper function for 'set_the_folder_of_reconstructed_files' function."""
-        return dirname(x)
-
     def calculate_dims(self):
         """
         In file based configure, This function reads the dimensions of data by opening one of 'npz'
