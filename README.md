@@ -1,6 +1,6 @@
 # description
 This repository provides the facilities for ASIP v2 data [(webpage)](https://data.dtu.dk/articles/dataset/AI4Arctic_ASIP_Sea_Ice_Dataset_-_version_2/13011134). Manual of this dataset is provided [here](https://data.dtu.dk/ndownloader/files/24951176).
-### DISCLAIMER: This code project is released as it without guarantees and extensive testing. It is meant to guide and help researchers and students get started on sea ice modelling with Convolutional neural networks.
+### DISCLAIMER: This code project is released with automated tests of `data engineering` aspect of code, **not** the `data science` aspect of it. It is meant to guide and help researchers and students get started on sea ice modelling with Convolutional neural networks.
 The order of execution of different parts of the code is as follow:
  1. [Execute the data building](#requirement)
  2. [Execute the tensorflow training](#execute-the-data-building)
