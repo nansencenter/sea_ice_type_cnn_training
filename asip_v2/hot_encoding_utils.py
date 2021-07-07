@@ -43,7 +43,8 @@ def form_of_ice(stage):
     return index_
     
 
-def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc):
+def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
+
     """
     
     Returns the list of one-hot encoded values corresponding to ice types 
