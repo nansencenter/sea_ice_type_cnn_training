@@ -26,7 +26,8 @@ def form_of_ice(stage):
         index of the list where the value (0/1 or concentration) will be.
 
     """
-    index_= np.nan
+    index_= None
+
     if stage ==0:
         index_ = 0
         #print('ice_free')
