@@ -26,10 +26,11 @@ def form_of_ice(stage):
         index of the list where the value (0/1 or concentration) will be.
 
     """
-    index_=0
-    #if stage ==0:
-        #index_ = 0
+    index_= np.nan
+    if stage ==0:
+        index_ = 0
         #print('ice_free')
+
     if stage!=-9:
         if stage in range(81,86):
             #print('Young ice')
