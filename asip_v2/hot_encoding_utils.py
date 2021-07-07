@@ -80,18 +80,15 @@ def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
     """
     
     L=[ct,ca,cb,cc]
-    index = np.argmax(L)
-    #print(index)
-    if index ==0:
-        result = [1,0,0,0]
+    result = [0,0,0,0]
+    if ct < min_ct:
+        index == 0
     else :
-        #print([sa,sb,sc])
-        #print('bibi',[sa,sb,sc][index])
-        index2 = form_of_ice([sa,sb,sc][index])
-        #print(index2)
-        result = [0,0,0,0]
-        result[index2]=1
+        index = np.argmax(L[1:])
+        index = form_of_ice([sa,sb,sc][index])
+    result[index]=1
     return result
+
 
 def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc):
     """
