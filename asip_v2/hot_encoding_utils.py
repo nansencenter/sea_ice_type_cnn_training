@@ -80,14 +80,22 @@ def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
 
     """
     
-    L=[ct,ca,cb,cc]
+    cabc = [ca,cb,cc]
     result = [0,0,0,0]
     if ct < min_ct:
-        index == 0
-    else :
-        index = np.argmax(L[1:])
-        index = form_of_ice([sa,sb,sc][index])
-    result[index]=1
+        return [1,0,0,0] # open water
+        
+    f = [0,0,0] # fractions
+    for ci,si in zip([ca,cb,cc], [sa,sb,sc]):
+        icetype = ice_type(si)
+        if ci != -9 and icetype is not None:
+           f[sod-1] += ci
+        if max(f) == 0:
+            icetype = ice_type(sa)
+        else:
+            icetype = np.argmax(f)+1
+    result[icetype]=1
+
     return result
 
 
