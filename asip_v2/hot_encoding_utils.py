@@ -31,7 +31,6 @@ def form_of_ice(stage):
         index_ = 0
         #print('ice_free')
 
-    if stage!=-9:
         if stage in range(81,86):
             #print('Young ice')
             index_=1
