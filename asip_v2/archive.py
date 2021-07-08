@@ -4,7 +4,7 @@ from json import dump, load
 import numpy as np
 from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
-
+from hot_encoding_utils import one_hot_m1, one_hot_m2, ice_type
 
 class Batches:
     """
@@ -12,7 +12,14 @@ class Batches:
     classes.
     """
     def view_as_windows(self, array):
+        print("array.shape",len(array.shape))
+        if len(array.shape)==3 and len(self.WINDOW_SIZE)==2:
+            n,p = self.WINDOW_SIZE
+            q = array.shape[2]
+            self.WINDOW_SIZE = (n,p,q)
+        print("self.WINDOW_SIZE", self.WINDOW_SIZE)
         return view_as_windows(array, self.WINDOW_SIZE, self.STRIDE)
+        
 
     def name_conventer(self, name):
         return name
@@ -142,11 +149,20 @@ class OutputBatches(SarBatches):
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
         """
-        en_values_array = values_array.copy() # oroginal dictionary should not be changed
+        # print(values_array.shape)
+        ic = values_array.copy()
+        n,p= ic.shape
+        #construction of the 3D array that will be filled
+        en_values_array=np.zeros((n,p,4))+np.nan
+        
+         # oroginal dictionary should not be changed
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            # each loop changes all locations of values_array (that have the very
-            # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            en_values_array[en_values_array == id_value] = np.byte(variable_belong_to_id[element])
+        # each loop changes all locations of values_array (that have the very
+        # 'id_value') to its corresponding value inside 'variable_belong_to_id'
+               
+            #Filling the 3D array
+            en_values_array[ic == id_value, :] = np.byte(np.array(variable_belong_to_id))
+       
         return en_values_array
 
     def resize(self, batches_array):
@@ -278,7 +294,17 @@ class Archive():
         # as a list at the 'value postion' of that key in the dictionary.
         for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
             id_val_splitted = id_and_corresponding_variable_values.split(";")
-            map_id_to_variable_values.update({int(id_val_splitted[0]): id_val_splitted[1:]})
+            #print(id_val_splitted)
+            [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
+            #result of the one-hot encoding method 
+            result = one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
+            ## if you want the method with the concentration uncomment the following line 
+    #         result = one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc)
+    
+            #Filling the dictionnary
+            map_id_to_variable_values.update({int(id_val_splitted[0]): result})
+            #print("----- input \n",ct,ca,sa,fa,cb,sb,fb,cc,sc, "\n-----output \n",result,"\n")
+            #print("----- input \n",id_val_splitted, "\n-----output \n",result,"\n")
 
         self.map_id_to_variable_values = map_id_to_variable_values
 
