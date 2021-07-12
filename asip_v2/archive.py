@@ -12,7 +12,8 @@ class Batches:
     classes.
     """
     def view_as_windows(self, array):
-        size = self.WINDOW_SIZE
+        window_size = self.WINDOW_SIZE
+        stride = self.STRIDE
         if len(array.shape)==3 and len(self.WINDOW_SIZE)==2:
             n,p = self.WINDOW_SIZE
             q = array.shape[2]
