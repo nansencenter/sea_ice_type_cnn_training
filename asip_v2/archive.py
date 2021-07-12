@@ -17,7 +17,8 @@ class Batches:
         if len(array.shape)==3:
             n,p = self.WINDOW_SIZE
             q = array.shape[2]
-            size = (n,p,q)
+            window_size = (n,p,q)
+            stride = (self.STRIDE, self.STRIDE, 1)
         
         return view_as_windows(array, size, self.STRIDE)
 
