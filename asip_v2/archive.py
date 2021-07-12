@@ -162,7 +162,7 @@ class OutputBatches(SarBatches):
         # 'id_value') to its corresponding value inside 'variable_belong_to_id'
                
             #Filling the 3D array
-            en_values_array[ic == id_value,:] = np.byte(np.array(variable_belong_to_id))
+            en_values_array[ic == id_value,:] = np.array(variable_belong_to_id)
         return en_values_array
 
     def resize(self, batches_array):
