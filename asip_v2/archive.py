@@ -20,7 +20,7 @@ class Batches:
             window_size = (n,p,q)
             stride = (self.STRIDE, self.STRIDE, 1)
         
-        return view_as_windows(array, size, self.STRIDE)
+        return view_as_windows(array, window_size, stride)
 
     def name_conventer(self, name):
         return name
