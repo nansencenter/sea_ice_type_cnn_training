@@ -54,15 +54,31 @@ class Batches:
         This function calculates the output matrix and store them in "batches_array" property of obj.
         """
         self.batches_array = {}
+        
         for element in self.loop_list:
+            
             values_array = np.ma.getdata(fil[self.name_for_getdata(element)])
+            
             values_array = self.pading(values_array)
-            values_array = self.convert(values_array, element)
+            views = self.view_as_windows(values_array)
+            
+            size_b, size_p, size_w1, size_w2 = views.shape
+            views_2 = self.views_array(self, size_b, size_p, size_w1, size_w2)
+            
+            for i in range(size_b):
+                for j in range(size_p):
+                    
+                    view_ij = self.convert(views[i,j,:,:], element)
+                    
+                    views_2[i,j,:] = view_ij
+                    
+            
             self.batches_array.update(
             {
-            self.name_conventer(element): self.view_as_windows(values_array)
+            self.name_conventer(element): views_2
             }
             )
+            
 
     def calculate_variable_ML(self):
         """
@@ -104,6 +120,9 @@ class SarBatches(Batches):
         self.STRIDE = archive_.STRIDE_SAR_SIZE
         self.step = archive_.step_sar
 
+    def views_array(self, size_b, size_p, size_w1, size_w2):
+        return np.zeros((size_b, size_p, size_w1, size_w2))
+    
     def pading(self, values_array):
         return self.calculate_pading(values_array, np.float32, None)
 
@@ -133,6 +152,9 @@ class OutputBatches(SarBatches):
         self.astype = np.byte
         self.step = archive_.step_output
 
+    def views_array(self, size_b, size_p, size_w1, size_w2):
+        return np.zeros((size_b, size_p, size_w1, size_w2, 4))
+    
     def name_conventer(self, name):
         return self.names_polygon_codes[name+1]
 
@@ -177,6 +199,9 @@ class Amsr2Batches(Batches):
         self.WINDOW_SIZE = archive_.WINDOW_SIZE_AMSR2
         self.STRIDE = archive_.STRIDE_AMS2_SIZE
 
+    def views_array(self, size_b, size_p, size_w1, size_w2):
+        return np.zeros((size_b, size_p, size_w1, size_w2))
+    
     def name_conventer(self, name):
         return name.replace(".", "_")
 
@@ -297,11 +322,11 @@ class Archive():
             id_val_splitted = id_and_corresponding_variable_values.split(";")
             
             [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
-              #result of the one-hot encoding using method 2 with partial concentrations 
+            #result of the one-hot encoding using method 2 with partial concentrations 
             result = one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
             
             
-        #     #Filling the dictionnary
+            #Filling the dictionnary
             map_id_to_variable_values.update({int(id_val_splitted[0]): result})
         
 
