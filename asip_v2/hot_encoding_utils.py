@@ -9,11 +9,11 @@ import numpy as np
 
 def ice_type(stage):
     """
-    Gives back the index the concentration or 1 should be on. 
-    Each index corresponds to a particular ice type 
+    Gives back the index the concentration or 1 should be on.
+    Each index corresponds to a particular ice type
     (0: Young ice; 1: First Year ice; 2: Multi year ice ; 3: Ice free).
-    The values on which depends this classification are described ine the 
-    ASIP-v2 manual. 
+    The values on which depends this classification are described ine the
+    ASIP-v2 manual.
     Parameters
     ----------
     stage : integer
@@ -44,11 +44,11 @@ def ice_type(stage):
 def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
 
     """
-    
-    Returns the list of one-hot encoded values corresponding to ice types 
-    based on concentration and stage of development of thickest, second 
+
+    Returns the list of one-hot encoded values corresponding to ice types
+    based on concentration and stage of development of thickest, second
     thickest and thrid thickest ice
-    
+
     Parameters
     ----------
     ct : integer
@@ -95,13 +95,13 @@ def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
     return result
 
 
-def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc):
+def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc):
     """
-    
-    Returns the list of one-hot encoded values in terms of concentration 
+
+    Returns the list of one-hot encoded values in terms of concentration
     corresponding to ice types based on concentration and stage of development
     of thickest, second thickest and thrid thickest ice.
-    
+
     Parameters
     ----------
     ct : integer
@@ -125,7 +125,7 @@ def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc):
     Returns
     -------
     result : list
-        List of one-hot encoded (in terms of concentration) values 
+        List of one-hot encoded (in terms of concentration) values
         corresponding to ice types.
     """
     result = [0,0,0,0]
@@ -141,5 +141,5 @@ def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc):
             result[icetype] = ct/100
     else:
         result[0] = 1-sum(result[1:])
-        
+
     return result

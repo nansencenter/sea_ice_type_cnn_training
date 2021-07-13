@@ -19,7 +19,7 @@ class Batches:
             q = array.shape[2]
             window_size = (n,p,q)
             stride = (self.STRIDE, self.STRIDE, 1)
-        
+
         return view_as_windows(array, window_size, stride)
 
     def name_conventer(self, name):
@@ -54,31 +54,31 @@ class Batches:
         This function calculates the output matrix and store them in "batches_array" property of obj.
         """
         self.batches_array = {}
-        
+
         for element in self.loop_list:
-            
+
             values_array = np.ma.getdata(fil[self.name_for_getdata(element)])
-            
+
             values_array = self.pading(values_array)
             views = self.view_as_windows(values_array)
-            
+
             size_b, size_p, size_w1, size_w2 = views.shape
-            views_2 = self.views_array(self, size_b, size_p, size_w1, size_w2)
-            
+            views_2 = self.views_array(size_b, size_p, size_w1, size_w2)
+
             for i in range(size_b):
                 for j in range(size_p):
-                    
+
                     view_ij = self.convert(views[i,j,:,:], element)
-                    
+
                     views_2[i,j,:] = view_ij
-                    
-            
+
+
             self.batches_array.update(
             {
             self.name_conventer(element): views_2
             }
             )
-            
+
 
     def calculate_variable_ML(self):
         """
@@ -122,7 +122,7 @@ class SarBatches(Batches):
 
     def views_array(self, size_b, size_p, size_w1, size_w2):
         return np.zeros((size_b, size_p, size_w1, size_w2))
-    
+
     def pading(self, values_array):
         return self.calculate_pading(values_array, np.float32, None)
 
@@ -154,7 +154,7 @@ class OutputBatches(SarBatches):
 
     def views_array(self, size_b, size_p, size_w1, size_w2):
         return np.zeros((size_b, size_p, size_w1, size_w2, 4))
-    
+
     def name_conventer(self, name):
         return self.names_polygon_codes[name+1]
 
@@ -174,15 +174,15 @@ class OutputBatches(SarBatches):
         """
         ic = values_array.copy()
         n,p= ic.shape
-        
+
         #construction of the 3D array that will be filled
         en_values_array=np.zeros((n,p,4))+np.nan
-        
+
           # original dictionary should not be changed
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
         # each loop changes all locations of values_array (that have the very
         # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-               
+
             #Filling the 3D array
             en_values_array[ic == id_value,:] = np.array(variable_belong_to_id)
         return en_values_array
@@ -201,7 +201,7 @@ class Amsr2Batches(Batches):
 
     def views_array(self, size_b, size_p, size_w1, size_w2):
         return np.zeros((size_b, size_p, size_w1, size_w2))
-    
+
     def name_conventer(self, name):
         return name.replace(".", "_")
 
@@ -315,20 +315,20 @@ class Archive():
         self.names_polygon_codes = fil['polygon_codes'][0].split(";")[:11]
         self.polygon_ids = np.ma.getdata(fil["polygon_icechart"])
         map_id_to_variable_values = {}  # initialization
-        
+
         # this dictionary has the ID as key and the corresponding values
         # as a list at the 'value postion' of that key in the dictionary.
         for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
             id_val_splitted = id_and_corresponding_variable_values.split(";")
-            
+
             [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
-            #result of the one-hot encoding using method 2 with partial concentrations 
+            #result of the one-hot encoding using method 2 with partial concentrations
             result = one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
-            
-            
+
+
             #Filling the dictionnary
             map_id_to_variable_values.update({int(id_val_splitted[0]): result})
-        
+
 
         self.map_id_to_variable_values = map_id_to_variable_values
 
