@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow import keras
-import ipdb
+
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -54,8 +54,7 @@ class DataGeneratorFrom_npz_File(DataGenerator):
     def data_generation(self):
         'Generates data containing batch_size samples' # X : (n_samples, *dim)
         self.x_y_z_initialization()
-        #ipdb.set_trace()
-      
+              
         # Generate data
         for i, ID in enumerate(self.list_IDs_temp):
             self.y[i,:,:,:,0] = np.load(ID).get(self.output_var_name)
