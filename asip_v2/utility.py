@@ -29,48 +29,36 @@ def type_for_nersc_noise(str_):
 def common_parser():
     "Common parser which is shared between building the dataset and applying it"
     parser = argparse.ArgumentParser(description='Process the arguments of script')
-    parser.add_argument('input_dir', type=str, help="Path to directory with input netCDF files")
+    parser.add_argument('input-dir', type=str, help="Directory with input netCDF files")
+    parser.add_argument('output-dir', type=str, help="Directory for output files (npz files)",)
     parser.add_argument(
-        '-r', '--aspect_ratio', required=False, type=int, default=50,
-        help="The ration between the cell size of primary and secondary input of ML model. stride"
-        " and window_size must be dividable to it.")
+        '-w', '--window', required=False, type=int, default=256,
+        help="window size for selecting patches from SAR/ice charts")
     parser.add_argument(
-        '-w', '--window_size', required=False, type=int, default=700,
-        help="window size for batching calculation(must be dividable to 50)")
+        '-w2', '--window2', required=False, type=int, default=16,
+        help="window size for selecting patches from AMSR2")
     parser.add_argument(
         '-swa','--rm_swath', required=False, type=int, default=0,
         help="threshold value for comparison with file.aoi_upperleft_sample to border the calculation")
     parser.add_argument(
-        '-n', '--noise_method', required=False, type=type_for_nersc_noise, default="nersc_",
-        help="the method that error calculation had been used for error.Leave as empty string '' for"
-                    "ESA noise corrections or as 'nersc_' for the Nansen center noise correction.")
+        '-n', '--name_sar', required=False, default="nersc_sar", choices=["nersc_sar", "sar"],
+        help="Prefix for SAR band name")
     parser.add_argument(
-        '-d','--distance_threshold', required=False, type=int, default=0,
+        '-d','--distance-threshold', required=False, type=int, default=0,
         help="threshold for distance from land in mask calculation")
     parser.add_argument(
-        '-s', '--stride', required=False, type=int, default=700,
-        help="stride for batching calculation(must be dividable to 50)")
+        '-s', '--stride', required=False, type=int, default=None,
+        help="stride for selecting patches from SAR/ice charts")
     parser.add_argument(
-        '-a','--step_resolution_sar', required=False, type=int, default=1,
-        help="step for resizing the sar data")
-    parser.add_argument(
-        '-b','--step_resolution_output', required=False, type=int, default=1,
-        help="step for resizing the output variables")
+        '-r','--resize-step', required=False, type=int, default=1,
+        help="step for resizing the SAR/ice charts data")
     return parser
 
 def postprocess_the_args(arg):
     """
     postprocess the args based on the received values and return 'dict_for_archive_init'
     """
-    if arg.window_size % arg.aspect_ratio:
-        raise argparse.ArgumentTypeError(
-                        f"Window size must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
-    if arg.stride % arg.aspect_ratio:
-        raise argparse.ArgumentTypeError(
-                            f"Stride must be dividable to value of aspect_ratio = {arg.aspect_ratio}")
-    window_size_amsr2 = (arg.window_size // arg.aspect_ratio, arg.window_size // arg.aspect_ratio)
-    window_size = (arg.window_size, arg.window_size)
-    amsr_labels = [
+    amsr2_names = [
         "btemp_6.9h",
         "btemp_6.9v",
         "btemp_7.3h",
@@ -86,23 +74,28 @@ def postprocess_the_args(arg):
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-    nersc = arg.noise_method
-    sar_names = [nersc + "sar_primary", nersc + "sar_secondary"]
-    stride_ams2_size = arg.stride // arg.aspect_ratio
-    dict_for_archive_init = {}
-    dict_for_archive_init["sar_names"] = sar_names
-    dict_for_archive_init["nersc"] = nersc
-    dict_for_archive_init["datapath"] = arg.input_dir
-    dict_for_archive_init["window_size"] = window_size
-    dict_for_archive_init["window_size_amsr2"] = window_size_amsr2
-    dict_for_archive_init["stride_sar_size"] = arg.stride
-    dict_for_archive_init["stride_ams2_size"] = stride_ams2_size
-    dict_for_archive_init["step_sar"] = arg.step_resolution_sar
-    dict_for_archive_init["step_output"] = arg.step_resolution_output
-    dict_for_archive_init["aspect_ratio"] = arg.aspect_ratio
-    dict_for_archive_init["rm_swath"] = arg.rm_swath
-    dict_for_archive_init["amsr_labels"] = amsr_labels
-    dict_for_archive_init["distance_threshold"] = arg.distance_threshold
+    names_sar = [arg.name_sar + "_primary", arg.name_sar + "sar_secondary"]
+    if arg.stride:
+        stride = arg.stride
+    else:
+        stride = arg.window
+
+    stride_amsr2 = arg.window2 * arg.stride / arg.window
+
+    dict_for_archive_init = dict(
+        input_dir = arg.input_dir,
+        output_dir=arg.output_dir,
+        names_sar = sar_names,
+        names_amsr2 = amsr2_names,
+        window_sar = arg.window,
+        window_amsr2 = arg.window2,
+        stride_sar = stride,
+        stride_amsr2 = stride,
+        resample_step_amsr2 = arg.window / arg.window2,
+        resize_step_sar = arg.resize_step,
+        rm_swath = arg.rm_swath,
+        distance_threshold = arg.distance_threshold,
+    )
     return dict_for_archive_init
 
 def create_model(self):

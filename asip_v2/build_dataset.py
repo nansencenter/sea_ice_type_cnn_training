@@ -14,14 +14,8 @@ def read_input_params_for_building():
     read the input data based on the command line arguments and return an instance of archive class
     """
     parser = common_parser()
-    parser.add_argument(
-        '-o','--output_dir', type=str, required=True,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),"output"),
-        help="Path to directory with output files (npz files)",)
     arg = parser.parse_args()
     dict_for_archive_init = postprocess_the_args(arg)
-    dict_for_archive_init["apply_instead_of_training"] = False
-    dict_for_archive_init["outpath"] = arg.output_dir
     return Archive(**dict_for_archive_init)
 
 def main():

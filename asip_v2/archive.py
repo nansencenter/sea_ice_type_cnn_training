@@ -1,9 +1,12 @@
+from dataclasses import dataclass
 import os
 from json import dump, load
 
 import numpy as np
 from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
+from scipy.interpolate import RegularGridInterpolator
+
 from hot_encoding_utils import one_hot_m1, one_hot_m2, ice_type
 
 class Batches:
@@ -12,13 +15,11 @@ class Batches:
     classes.
     """
     def view_as_windows(self, array):
-        window_size = self.WINDOW_SIZE
-        stride = self.STRIDE
+        window_size = (self.window, self.window)
+        stride = self.stride
         if len(array.shape)==3:
-            n,p = self.WINDOW_SIZE
-            q = array.shape[2]
-            window_size = (n,p,q)
-            stride = (self.STRIDE, self.STRIDE, 1)
+            window_size += (array.shape[2],)
+            stride = (self.stride, self.stride, 1)
 
         return view_as_windows(array, window_size, stride)
 
@@ -41,12 +42,17 @@ class Batches:
             array = array[:-1, :-1]
         return array
 
-    def calculate_pading(self, values_array, astype, constant_value):
+    def resample(self, fil, x):
+        return x
+
+    def pading(self, values_array, constant_value=0):
         """ pad based on self.pads and constant_value """
         (pad_hight_up, pad_hight_down, pad_width_west, pad_width_east) = self.pads
-        values_array = np.pad( values_array, ((pad_hight_up, pad_hight_down),
-                                              (pad_width_west, pad_width_east)),
-                        'constant', constant_values=(constant_value, constant_value)).astype(astype)
+        values_array = np.pad(
+            values_array,
+            ((pad_hight_up, pad_hight_down), (pad_width_west, pad_width_east)),
+            'constant',
+            constant_values=(constant_value, constant_value)).astype(self.astype)
         return values_array
 
     def pad_and_batch(self, fil):
@@ -58,8 +64,8 @@ class Batches:
         for element in self.loop_list:
 
             values_array = np.ma.getdata(fil[self.name_for_getdata(element)])
-
             values_array = self.pading(values_array)
+            values_array = self.resample(fil, values_array)
             views = self.view_as_windows(values_array)
 
             size_b, size_p, size_w1, size_w2 = views.shape
@@ -70,15 +76,14 @@ class Batches:
 
                     view_ij = self.convert(views[i,j,:,:], element)
 
-                    views_2[i,j,:] = view_ij
+                    views_2[i,j,:] = view_ij.astype(self.astype)
 
 
             self.batches_array.update(
             {
-            self.name_conventer(element): views_2
+                self.name_conventer(element): views_2
             }
             )
-
 
     def calculate_variable_ML(self):
         """
@@ -106,25 +111,24 @@ class Batches:
         del template
         return PROP
 
-    def pading(self):
-        raise NotImplementedError('The pading() method was not implemented')
+    def views_array(self, size_b, size_p, size_w1, size_w2):
+        return np.zeros((size_b, size_p, size_w1, size_w2), self.astype)
 
+    def resample(self, fil, array):
+        """ Resample array on finer / lower resolution using metadata from netCDF
+        Do nothing for SAR and Output
+        """
+        return array
 
 class SarBatches(Batches):
     def __init__(self,archive_):
-        self.loop_list = archive_.SAR_NAMES
+        self.loop_list = archive_.names_sar
         self.astype = np.float32
         self.pads = archive_.pads
         self.batches_mask = archive_.mask_batches
-        self.WINDOW_SIZE = archive_.WINDOW_SIZE
-        self.STRIDE = archive_.STRIDE_SAR_SIZE
-        self.step = archive_.step_sar
-
-    def views_array(self, size_b, size_p, size_w1, size_w2):
-        return np.zeros((size_b, size_p, size_w1, size_w2))
-
-    def pading(self, values_array):
-        return self.calculate_pading(values_array, np.float32, None)
+        self.window = archive_.window
+        self.stride = archive_.stride
+        self.step = archive_.resize_step_sar
 
     def resize(self, batches_array):
         """This function averages the values of pixel of 'batches_array' with the windows of
@@ -149,20 +153,17 @@ class OutputBatches(SarBatches):
         self.map_id_to_variable_values = archive_.map_id_to_variable_values
         self.names_polygon_codes = archive_.names_polygon_codes
         self.loop_list = list(range(10))
-        self.astype = np.byte
-        self.step = archive_.step_output
+        self.astype = np.float16
+        self.step = archive_.resize_step_sar
 
     def views_array(self, size_b, size_p, size_w1, size_w2):
-        return np.zeros((size_b, size_p, size_w1, size_w2, 4))
+        return np.zeros((size_b, size_p, size_w1, size_w2, 4), self.astype)
 
     def name_conventer(self, name):
         return self.names_polygon_codes[name+1]
 
     def name_for_getdata(self, name):
         return "polygon_icechart"
-
-    def pading(self, values_array):
-        return self.calculate_pading(values_array, np.byte, 0)
 
     def convert(self, values_array, element):
         return self.encode_icechart(values_array, element)
@@ -192,15 +193,12 @@ class OutputBatches(SarBatches):
 
 
 class Amsr2Batches(Batches):
-    def __init__(self,archive_):
-        self.loop_list = archive_.AMSR_LABELS
+    def __init__(self, archive_):
+        self.loop_list = archive_.names_amsr2
         self.astype = np.float32
         self.batches_mask = archive_.mask_batches_amsr2
-        self.WINDOW_SIZE = archive_.WINDOW_SIZE_AMSR2
-        self.STRIDE = archive_.STRIDE_AMS2_SIZE
-
-    def views_array(self, size_b, size_p, size_w1, size_w2):
-        return np.zeros((size_b, size_p, size_w1, size_w2))
+        self.window = archive_.window_amsr2
+        self.stride = archive_.stride_amsr2
 
     def name_conventer(self, name):
         return name.replace(".", "_")
@@ -208,58 +206,35 @@ class Amsr2Batches(Batches):
     def pading(self, x):
         return x
 
-    def resize(self, x):
+    def resample(self, fil, x):
+
+        nc_sample = fil['sample'][:]
+        nc_line = fil['line'][:]
         return x
 
 
-class Archive():
-    def __init__(self,
-                 sar_names=None,
-                 nersc=None,
-                 stride_sar_size=None,
-                 stride_ams2_size=None,
-                 window_size=None,
-                 window_size_amsr2=None,
-                 amsr_labels=None,
-                 distance_threshold=None,
-                 rm_swath=None,
-                 outpath=None,
-                 datapath=None,
-                 step_sar=None,
-                 step_output=None,
-                 apply_instead_of_training=None,
-                 memory_mode=None,
-                 shuffle_on_epoch_end=None,
-                 shuffle_for_training=None,
-                 percentage_of_training=None,
-                 beginning_day_of_year=None,
-                 ending_day_of_year=None,
-                 batch_size=None,
-                 aspect_ratio=None):
-        self.SAR_NAMES = sar_names
-        self.NERSC = nersc
-        self.STRIDE_SAR_SIZE = stride_sar_size
-        self.STRIDE_AMS2_SIZE = stride_ams2_size
-        self.WINDOW_SIZE = window_size
-        self.WINDOW_SIZE_AMSR2 = window_size_amsr2
-        self.AMSR_LABELS = amsr_labels
-        self.DISTANCE_THRESHOLD = distance_threshold
-        self.RM_SWATH = rm_swath
-        self.OUTPATH = outpath
-        self.DATAPATH = datapath
-        self.step_sar = step_sar
-        self.step_output = step_output
-        self.apply_instead_of_training = apply_instead_of_training
-        self.shuffle_on_epoch_end = shuffle_on_epoch_end
-        self.shuffle_for_training = shuffle_for_training
-        self.percentage_of_training = percentage_of_training
-        self.beginning_day_of_year = beginning_day_of_year
-        self.ending_day_of_year = ending_day_of_year
-        self.batch_size = batch_size
-        self.ASPECT_RATIO = aspect_ratio
-        self.PROP = {}# Each element inside self.PROP is a list that contains slices of data for
-                      # different locations.
+    def resize(self, x):
+        return x
 
+@dataclass
+class Archive():
+    input_dir           : str
+    output_dir          : str
+    names_sar           : list
+    names_amsr2         : list
+    window_sar          : int
+    window_amsr2        : int
+    stride_sar          : int
+    stride_amsr2        : int
+    resample_step_amsr2 : int
+    resize_step_sar     : int
+    rm_swath            : int
+    distance_threshold  : int
+
+    def __post_init__(self):
+        # Each element inside self.PROP is a list that contains slices of data for
+        # different locations.
+        self.PROP = {}
 
     def get_unprocessed_files(self):
         """
@@ -268,13 +243,13 @@ class Archive():
         2. find out which files in directory of archive has not been processed compared to
         'self.processed_files'  and save them as 'self.files'. """
         try:
-            with open(os.path.join(self.OUTPATH, "processed_files.json")) as json_file:
+            with open(os.path.join(self.output_dir, "processed_files.json")) as json_file:
                 self.processed_files = load(json_file)
         except FileNotFoundError:
             print("all files are being processed!")
             self.processed_files = []
         self.files = []
-        for elem in os.listdir(self.DATAPATH):
+        for elem in os.listdir(self.input_dir):
             if (elem.endswith(".nc") and elem not in self.processed_files):
                 self.files.append(elem)
 
@@ -283,7 +258,7 @@ class Archive():
         'processed_files.json'. """
         self.processed_files.append(self.files[i]) if (
             self.files[i] and self.files[i] not in self.processed_files) else None
-        with open(os.path.join(self.OUTPATH, "processed_files.json"), 'w') as outfile:
+        with open(os.path.join(self.output_dir, "processed_files.json"), 'w') as outfile:
             dump(self.processed_files, outfile)
 
     def check_file_healthiness(self, fil, filename):
@@ -293,12 +268,12 @@ class Archive():
         if 'polygon_icechart' not in fil.variables:
             print(f"'polygon_icechart' should be in 'fil.variables'. for {filename}")
             return False
-        if not (self.AMSR_LABELS[0] in fil.variables):
+        if not (self.names_amsr2[0] in fil.variables):
             print(f"{filename},missing AMSR file")
             return False
-        lowerbound = max([self.RM_SWATH, fil.aoi_upperleft_sample])
-        if ((fil.aoi_lowerright_sample-lowerbound) < self.WINDOW_SIZE[0] or
-                (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.WINDOW_SIZE[1]):
+        lowerbound = max([self.rm_swath, fil.aoi_upperleft_sample])
+        if ((fil.aoi_lowerright_sample-lowerbound) < self.window_sar or
+                (fil.aoi_lowerright_line-fil.aoi_upperleft_line) < self.window_sar):
             print(f"{filename},unmasked scene is too small")
             return False
         else:
@@ -333,9 +308,9 @@ class Archive():
         self.map_id_to_variable_values = map_id_to_variable_values
 
     @staticmethod
-    def get_the_mask_of_sar_size_data(sar_names, fil, distance_threshold):
-        mask_sar_size = np.zeros(fil[sar_names[0]][:].shape, bool)
-        for str_ in sar_names+['polygon_icechart']:
+    def get_the_mask_of_sar_size_data(names_sar, fil, distance_threshold):
+        mask_sar_size = np.zeros(fil[names_sar[0]][:].shape, bool)
+        for str_ in names_sar+['polygon_icechart']:
             mask = np.ma.getmaskarray(fil[str_][:])
             mask_sar_size = np.ma.mask_or(mask_sar_size, mask, shrink=False)
             # not only mask itself, but also being finite is import for the data. Thus, another
@@ -347,17 +322,17 @@ class Archive():
                                                                                  distance_threshold)
         return mask_sar_size
 
-    def get_the_mask_of_amsr2_data(self, amsr_labels, fil):
-        mask_amsr = np.zeros(fil[amsr_labels[0]][:].shape, bool)
-        for amsr_label in amsr_labels:
+    def get_the_mask_of_amsr2_data(self, names_amsr2, fil):
+        mask_amsr = np.zeros(fil[names_amsr2[0]][:].shape, bool)
+        for amsr_label in names_amsr2:
             mask = np.ma.getmaskarray(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask, shrink=False)
             mask_isfinite = ~np.isfinite(fil[amsr_label])
             mask_amsr = np.ma.mask_or(mask_amsr, mask_isfinite, shrink=False)
         shape_mask_amsr_0, shape_mask_amsr_1 = mask_amsr.shape[0], mask_amsr.shape[1]
         # enlarging the mask of amsr2 data to be in the size of mask sar data
-        mask_amsr = np.repeat(mask_amsr, self.ASPECT_RATIO, axis=0)
-        mask_amsr = np.repeat(mask_amsr, self.ASPECT_RATIO, axis=1)
+        mask_amsr = np.repeat(mask_amsr, 50, axis=0)
+        mask_amsr = np.repeat(mask_amsr, 50, axis=1)
         return mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1
 
     @staticmethod
@@ -417,8 +392,8 @@ class Archive():
         ====
         inputs:
         fil: netCDF4 file object
-        amsr_labels: list of names of amsr2 labels in the file
-        sar_names: list of names of sar labels in the file
+        names_amsr2: list of names of amsr2 labels in the file
+        names_sar: list of names of sar labels in the file
         distance_threshold: integer indicating the threshold for considering the mask based on
         distance to land values.
         ====
@@ -429,11 +404,11 @@ class Archive():
         of pixels.
         """
         # 1. get the mask of sar data
-        mask_sar_size = self.get_the_mask_of_sar_size_data(self.SAR_NAMES, fil,
-                                                           self.DISTANCE_THRESHOLD)
+        mask_sar_size = self.get_the_mask_of_sar_size_data(self.names_sar, fil,
+                                                           self.distance_threshold)
         # 2. get the mask of amsr2 data
         mask_amsr, shape_mask_amsr_0, shape_mask_amsr_1 = self.get_the_mask_of_amsr2_data(
-                                                                              self.AMSR_LABELS, fil)
+                                                                              self.names_amsr2, fil)
         mask_sar_size, self.pads = self.pad_the_mask_of_sar_based_on_size_amsr(mask_amsr,
                                                                                mask_sar_size)
         # 3. final mask based on two masks
@@ -441,9 +416,9 @@ class Archive():
         self.final_mask_with_amsr2_size = self.downsample_mask_for_amsr2(
                                            self.final_ful_mask, shape_mask_amsr_0, shape_mask_amsr_1
                                                                         )
-        if self.apply_instead_of_training:
-            self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
-            self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
+        #if self.apply_instead_of_training:
+        #    self.final_ful_mask = np.full(np.shape(self.final_ful_mask), False)
+        #    self.final_mask_with_amsr2_size = np.full(np.shape(self.final_mask_with_amsr2_size),False)
 
     def write_batches(self):
         """
@@ -468,7 +443,7 @@ class Archive():
                     {name_without_dot: self.PROP[name_without_dot][slice_]}
                     )
             np.savez(
-                f"""{os.path.join(self.OUTPATH,self.scene)}_{slice_:0>6}_{self.NERSC}-"""
+                f"""{os.path.join(self.output_dir,self.scene)}_{slice_:0>6}-"""
                 +f"""{self.PROP["_locs"][slice_][0]}_{self.PROP["_locs"][slice_][1]}""",
                 **dict_for_saving
                 )
@@ -477,17 +452,16 @@ class Archive():
         self.PROP = {}
 
     def calculate_batches_for_masks(self):
-        self.mask_batches = view_as_windows(self.final_ful_mask, self.WINDOW_SIZE,
-                                            self.STRIDE_SAR_SIZE)
+        self.mask_batches = view_as_windows(self.final_ful_mask, self.window_sar, self.stride)
         self.mask_batches_amsr2 = view_as_windows(
-                    self.final_mask_with_amsr2_size, self.WINDOW_SIZE_AMSR2, self.STRIDE_AMS2_SIZE)
+                    self.final_mask_with_amsr2_size, self.window_amsr2, self.stride_amsr2)
 
     def process_dataset(self, fil, filename):
         if self.check_file_healthiness(fil, filename):
             self.read_icechart_coding(fil, filename)
             self.calculate_mask(fil)
             self.calculate_batches_for_masks()
-            for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
+            for cls_ in [Amsr2Batches, SarBatches, OutputBatches, Amsr2Batches]:
                 obj = cls_(self)
                 obj.pad_and_batch(fil)
                 self.PROP.update(obj.calculate_variable_ML())
