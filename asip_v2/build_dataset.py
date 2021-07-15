@@ -24,11 +24,12 @@ def main():
     archive_.get_unprocessed_files()
     for i, filename in enumerate(archive_.files):
         print("Starting %d out of %d unprocessed files" % (i, len(archive_.files)))
-        fil = nc.Dataset(os.path.join(archive_.DATAPATH, filename))
+        fil = nc.Dataset(os.path.join(archive_.input_dir, filename))
         archive_.process_dataset(fil, filename)
         # saving section
         archive_.write_batches()
         archive_.update_processed_files(i)
+        del archive_.batches
         del fil
 
 

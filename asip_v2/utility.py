@@ -29,8 +29,8 @@ def type_for_nersc_noise(str_):
 def common_parser():
     "Common parser which is shared between building the dataset and applying it"
     parser = argparse.ArgumentParser(description='Process the arguments of script')
-    parser.add_argument('input-dir', type=str, help="Directory with input netCDF files")
-    parser.add_argument('output-dir', type=str, help="Directory for output files (npz files)",)
+    parser.add_argument('input_dir', type=str, help="Directory with input netCDF files")
+    parser.add_argument('output_dir', type=str, help="Directory for output files (npz files)",)
     parser.add_argument(
         '-w', '--window', required=False, type=int, default=256,
         help="window size for selecting patches from SAR/ice charts")
@@ -58,7 +58,7 @@ def postprocess_the_args(arg):
     """
     postprocess the args based on the received values and return 'dict_for_archive_init'
     """
-    amsr2_names = [
+    names_amsr2 = [
         "btemp_6.9h",
         "btemp_6.9v",
         "btemp_7.3h",
@@ -74,24 +74,24 @@ def postprocess_the_args(arg):
         "btemp_89.0h",
         "btemp_89.0v",
     ]
-    names_sar = [arg.name_sar + "_primary", arg.name_sar + "sar_secondary"]
+    names_sar = [arg.name_sar + "_primary", arg.name_sar + "_secondary"]
     if arg.stride:
         stride = arg.stride
     else:
         stride = arg.window
 
-    stride_amsr2 = arg.window2 * arg.stride / arg.window
+    stride_amsr2 = int(arg.window2 * stride / arg.window)
 
     dict_for_archive_init = dict(
         input_dir = arg.input_dir,
         output_dir=arg.output_dir,
-        names_sar = sar_names,
-        names_amsr2 = amsr2_names,
+        names_sar = names_sar,
+        names_amsr2 = names_amsr2,
         window_sar = arg.window,
         window_amsr2 = arg.window2,
         stride_sar = stride,
-        stride_amsr2 = stride,
-        resample_step_amsr2 = arg.window / arg.window2,
+        stride_amsr2 = stride_amsr2,
+        resample_step_amsr2 = int(arg.window / arg.window2),
         resize_step_sar = arg.resize_step,
         rm_swath = arg.rm_swath,
         distance_threshold = arg.distance_threshold,
