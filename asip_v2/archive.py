@@ -452,7 +452,7 @@ class Archive():
         The file contains all variables which belongs to that location.
         """
         desired_variable_names = self.SAR_NAMES \
-                                 + self.AMSR_LABELS + self.names_polygon_codes[1:] + ["_locs"]
+                                 + self.AMSR_LABELS + ['CT'] + ["_locs"]
         # removing dot from the name of variable
         desired_variable_names = [x.replace(".", "_") for x in desired_variable_names]
         # loop for saving each batch of separately in each file.

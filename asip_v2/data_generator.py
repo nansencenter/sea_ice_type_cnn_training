@@ -1,5 +1,6 @@
 import numpy as np
-import keras
+from tensorflow import keras
+
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -53,10 +54,10 @@ class DataGeneratorFrom_npz_File(DataGenerator):
     def data_generation(self):
         'Generates data containing batch_size samples' # X : (n_samples, *dim)
         self.x_y_z_initialization()
-
+              
         # Generate data
         for i, ID in enumerate(self.list_IDs_temp):
-            self.y[i,:,:,0] = np.load(ID).get(self.output_var_name)
+            self.y[i,:,:,:] = np.load(ID).get(self.output_var_name)
             for j, sar_name in enumerate(self.input_var_names):
                 self.X[i,:,:,j] = np.load(ID).get(sar_name)
             for j, amsr2_name in enumerate(self.amsr2_var_names):
@@ -73,7 +74,7 @@ class DataGeneratorFromMemory(DataGenerator):
 
         # Generate data
         for i, ID in enumerate(self.list_IDs_temp):
-            self.y[i,:,:,0] = (
+            self.y[i,:,:,:] = (
                 ans for x, ans in zip(self.prop["_locs"], self.prop[self.output_var_name]) if x==ID
                               ).__next__()
 
