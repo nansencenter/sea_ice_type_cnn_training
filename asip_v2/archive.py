@@ -161,7 +161,7 @@ class Amsr2Batches(Batches):
         return x
 
     def get_array(self, fil, name):
-        return self._archive.amsr2_data[name]
+        return self._archive.amsr2_data[name].astype(self.astype)
 
 
 @dataclass
