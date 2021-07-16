@@ -41,7 +41,7 @@ def ice_type(stage):
     return index_
 
 
-def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
+def one_hot_binary(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
 
     """
 
@@ -95,7 +95,7 @@ def one_hot_m1(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc, min_ct=10):
     return result
 
 
-def one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc):
+def one_hot_continous(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc):
     """
 
     Returns the list of one-hot encoded values in terms of concentration
