@@ -1,0 +1,8 @@
+# Dockerfile for image based on TensorFlow GPU-enabled image
+FROM tensorflow/tensorflow:latest-gpu-jupyter
+
+WORKDIR /tmp/
+COPY requirements_tf.txt ./
+RUN pip install --no-cache-dir -r requirements_tf.txt 
+WORKDIR /tf
+

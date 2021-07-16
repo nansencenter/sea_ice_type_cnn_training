@@ -1,0 +1,3 @@
+scikit-image
+netcdf4
+scipy
