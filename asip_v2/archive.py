@@ -179,11 +179,6 @@ class Archive():
     rm_swath            : int
     distance_threshold  : int
 
-    def __post_init__(self):
-        # Each element inside self.batches is a list that contains slices of data for
-        # different locations.
-        self.batches = {}
-
     def get_unprocessed_files(self):
         """
         Two function do two jobs:
