@@ -179,7 +179,7 @@ class Configure():
         create 'self.params'.
         """
         self.params = {'dims_input':      (*self.dims_input, len(self.input_var_names)),
-                       'dims_output':     (*self.dims_output, 1),
+                       'dims_output':     (self.dims_output),
                        'dims_amsr2':      (*self.dims_amsr2, len(self.amsr2_var_names)),
                        'output_var_name': self.output_var_name,
                        'input_var_names': self.input_var_names,
