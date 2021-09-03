@@ -8,7 +8,7 @@ from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
 
-from hot_encoding_utils import one_hot_m1, one_hot_m2, ice_type
+from hot_encoding_utils import one_hot_binary, one_hot_continous, ice_type
 
 
 class Batches:
@@ -115,9 +115,6 @@ class OutputBatches(SarBatches):
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
 
-    def views_array(self, size_b, size_p, size_w1, size_w2):
-        return np.zeros((size_b, size_p, size_w1, size_w2, 4), self.astype)
-
     def name_conventer(self, name):
         return 'ice_type'
 
@@ -178,6 +175,7 @@ class Archive():
     resize_step_sar     : int
     rm_swath            : int
     distance_threshold  : int
+    encoding            : str
 
     def get_unprocessed_files(self):
         """
@@ -239,8 +237,12 @@ class Archive():
         for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
             id_val_splitted = id_and_corresponding_variable_values.split(";")
             [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
-            #result of the one-hot encoding using method 2 with partial concentrations
-            result = one_hot_m2(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
+            #result of the one-hot encoding
+            one_hot_func = {
+                'binary': one_hot_binary,
+                'continous': one_hot_continous,
+            }[self.encoding]
+            result = one_hot_func(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
             #Filling the dictionnary
             map_id_to_variable_values.update({int(id_val_splitted[0]): result})
         self.map_id_to_variable_values = map_id_to_variable_values

@@ -52,6 +52,9 @@ def common_parser():
     parser.add_argument(
         '-r','--resize-step', required=False, type=int, default=1,
         help="step for resizing the SAR/ice charts data")
+    parser.add_argument(
+        '-e','--encoding', required=False, type=str, default='continous', choices=["continous", "binary"],
+        help="type of hot-encoding of ice chart data. binary - only 0 or 1. continuous - from 0 to 1.")
     return parser
 
 def postprocess_the_args(arg):
@@ -95,6 +98,7 @@ def postprocess_the_args(arg):
         resize_step_sar = arg.resize_step,
         rm_swath = arg.rm_swath,
         distance_threshold = arg.distance_threshold,
+        encoding = arg.encoding,
     )
     return dict_for_archive_init
 
