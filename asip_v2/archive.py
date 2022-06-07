@@ -8,7 +8,7 @@ from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
 
-from hot_encoding_utils import one_hot_binary, one_hot_continous, ice_type
+# from hot_encoding_utils import one_hot_binary, one_hot_continous, ice_type
 
 
 class Batches:
@@ -141,6 +141,15 @@ class OutputBatches(SarBatches):
             en_values_array[ic == id_value,:] = np.array(variable_belong_to_id)
         return en_values_array.astype(self.astype)
 
+    # def resize(self, array):
+    #     array = array[::self.step, ::self.step]
+    #     if array.shape[0] % self.step:
+    #         # in the case of image size is not being dividable to the "step" value,the value at
+    #             # the end is omitted.
+    #         array = array[:-1, :-1]
+    #     print(array[0][0])
+    #     return array
+
 
 class Amsr2Batches(Batches):
     def __init__(self, archive_):
@@ -238,11 +247,12 @@ class Archive():
             id_val_splitted = id_and_corresponding_variable_values.split(";")
             [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
             #result of the one-hot encoding
-            one_hot_func = {
-                'binary': one_hot_binary,
-                'continous': one_hot_continous,
-            }[self.encoding]
-            result = one_hot_func(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
+            # one_hot_func = {
+            #     'binary': one_hot_binary,
+            #     'continous': one_hot_continous,
+            # }[self.encoding]
+            # result = one_hot_func(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
+            result=[0,0.8,0.2,0]
             #Filling the dictionnary
             map_id_to_variable_values.update({int(id_val_splitted[0]): result})
         self.map_id_to_variable_values = map_id_to_variable_values

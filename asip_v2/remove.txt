@@ -1,0 +1,21 @@
+docker run --entrypoint coverage -v C:\Users\Utilisateur\Desktop\internship\sea_ice_type_cnn_training:/usr/src/app sat_pipeline run -m unittest /usr/src/app/asip_v2/run_tests.py
+
+
+
+TEST :
+  *archive :
+      get_array
+      make_batch
+
+      convert
+
+      get_array
+
+      read_icechart_coding
+      resample_amsr2
+      write_batches
+      process_dataset
+
+
+
+python build_dataset.py input output -n nersc_sar -w 400 -s 400

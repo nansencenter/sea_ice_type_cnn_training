@@ -16,13 +16,13 @@ class UtilityFunctionsTestCases(unittest.TestCase):
 
     def test_common_parser_and_postprocess_the_args(self):
         """ common parser shall correctly set the 'dict_for_archive_init' """
-        sys.argv = ['', "dir_name", '-n', 'nersc_', '-w', '700', '-s', '700', '-r', '50']
+        sys.argv = ['', "dir_name", "output", '-n', 'nersc_sar', '-w', '700', '-s', '700', '-r', '50']
         parser = common_parser()
         arg = parser.parse_args()
         dict_for_archive_init = postprocess_the_args(arg)
         self.assertEqual(dict_for_archive_init,
             {'sar_names': ['nersc_sar_primary', 'nersc_sar_secondary'],
-            'nersc': 'nersc_',
+            'nersc': 'nersc_sar',
             'datapath': "dir_name",
             'window_size': (700, 700),
             'window_size_amsr2': (14, 14),
@@ -41,7 +41,7 @@ class UtilityFunctionsTestCases(unittest.TestCase):
     def test_postprocess_the_args_for_validation_window_size(self):
         """Window size must be dividable to value of aspect_ratio"""
         parser = common_parser()
-        sys.argv = ['', "dir_name", '-n', 'nersc_', '-w', '701', '-s', '700', '-r', '50']
+        sys.argv = ['', "dir_name", 'output', '-n', 'nersc_sar', '-w', '701', '-s', '700', '-r', '50']
         arg = parser.parse_args()
         with self.assertRaises(argparse.ArgumentTypeError) as cm:
             postprocess_the_args(arg)
@@ -52,7 +52,7 @@ class UtilityFunctionsTestCases(unittest.TestCase):
     def test_postprocess_the_args_for_validation_stride(self):
         """Stride must be dividable to value of aspect_ratio"""
         parser = common_parser()
-        sys.argv = ['', "dir_name", '-n', 'nersc_', '-w', '700', '-s', '701', '-r', '50']
+        sys.argv = ['', "dir_name", '-n', 'nersc_sar', '-w', '700', '-s', '701', '-r', '50']
         arg = parser.parse_args()
         with self.assertRaises(argparse.ArgumentTypeError) as cm:
             postprocess_the_args(arg)
