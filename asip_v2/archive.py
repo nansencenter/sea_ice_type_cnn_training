@@ -141,14 +141,35 @@ class OutputBatches(SarBatches):
             en_values_array[ic == id_value,:] = np.array(variable_belong_to_id)
         return en_values_array.astype(self.astype)
 
-    # def resize(self, array):
-    #     array = array[::self.step, ::self.step]
-    #     if array.shape[0] % self.step:
-    #         # in the case of image size is not being dividable to the "step" value,the value at
-    #             # the end is omitted.
-    #         array = array[:-1, :-1]
-    #     print(array[0][0])
-    #     return array
+    def resize(self, array):
+        """ return only one vector because all pixels in the view are in the same segment so the same information
+        """
+        return array[0][0]
+
+    def make_batch(self, fil):
+            """
+            This function calculates the output matrix and store them in "batches_array" property of obj.
+            """
+            batch = {}
+            for element in self.loop_list:
+                array = self.get_array(fil, self.name_for_getdata(element))
+                views = self.view_as_windows(array)
+                array_list = []
+                array_locs = []
+                for i in range(views.shape[0]):
+                    for j in range(views.shape[1]):
+                        if np.any(np.isnan(views[i,j,:,:])):
+                            continue
+                        #if there are several different segments in the view, then we don't keep this view
+                        if(np.amax(views[i,j,:,:]) != np.amin(views[i,j,:,:])):
+                            continue
+                        array_list.append(self.resize(self.convert(views[i,j,:,:])))
+                        array_locs.append((i,j))
+                        batch[self.name_conventer(element)] = array_list
+                        batch[self.name_conventer(element) + '_loc'] = array_locs
+            # print((batch['ice_type']))
+            # print((batch['ice_type_loc']))
+            return batch
 
 
 class Amsr2Batches(Batches):
@@ -196,7 +217,7 @@ class Archive():
             with open(os.path.join(self.output_dir, "processed_files.json")) as json_file:
                 self.processed_files = load(json_file)
         except FileNotFoundError:
-            print("all files are being processed!")
+            print("All files are being processed!")
             self.processed_files = []
         self.files = []
         for elem in os.listdir(self.input_dir):
@@ -219,7 +240,7 @@ class Archive():
             print(f"'polygon_icechart' should be in 'fil.variables'. for {filename}")
             return False
         if not (self.names_amsr2[0] in fil.variables):
-            print(f"{filename},missing AMSR file")
+            print(f"{filename}, missing AMSR file")
             return False
         lowerbound = max([self.rm_swath, fil.aoi_upperleft_sample])
         if ((fil.aoi_lowerright_sample-lowerbound) < self.window_sar or
@@ -283,10 +304,14 @@ class Archive():
         loc_names = [x for x in self.batches.keys() if x.endswith('_loc')]
 
         for i, loc in enumerate(self.batches[loc_names[0]]):
+
             # check that current loc is present in all locs
             loc_exists = True
             for loc_name in loc_names:
+
+
                 if loc not in self.batches[loc_name]:
+
                     loc_exists = False
                     break
             # skip if loc is not present in all
@@ -298,8 +323,10 @@ class Archive():
                 j = self.batches[lname].index(loc)
                 data[oname] = self.batches[iname][j]
             opath = os.path.join(self.output_dir, self.scene)
+
             ofilename = f'{opath}_{i:0>6}.npz'
             np.savez(ofilename, **data)
+
 
     def process_dataset(self, fil, filename):
         t0 = time.time()
@@ -308,6 +335,7 @@ class Archive():
             self.resample_amsr2(fil)
             for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
                 obj = cls_(self)
+                print(obj)
                 batch = obj.make_batch(fil)
                 self.batches.update(batch)
                 del obj

@@ -147,7 +147,7 @@ class ArchiveTestCases(unittest.TestCase):
         'files' attribute must be filled with what comes out of litsdir of input folder. """
         test_archive = Archive(input_dir = 'input',
                                output_dir = 'output',
-                               names_sar = ['sar1'],
+                               names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
                                names_amsr2 = ['amsr2'],
                                window_sar = 50,
                                window_amsr2 = 50,
@@ -170,8 +170,8 @@ class ArchiveTestCases(unittest.TestCase):
         temp_fold = tempfile.TemporaryDirectory()
         test_archive = Archive(input_dir = 'input',
                                output_dir = temp_fold.name,
-                               names_sar = ['sar1'],
-                               names_amsr2 = ['amsr2'],
+                               names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
+                               names_amsr2 = ['btemp_6.9h', 'btemp_6.9v', 'btemp_7.3h', 'btemp_7.3v', 'btemp_10.7h', 'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v', 'btemp_23.8h', 'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v', 'btemp_89.0ah', 'btemp_89.0bh', 'btemp_89.0av', 'btemp_89.0bv', 'btemp_89.0h', 'btemp_89.0v'],
                                window_sar = 50,
                                window_amsr2 = 50,
                                stride_sar = 50,
@@ -195,7 +195,7 @@ class ArchiveTestCases(unittest.TestCase):
         # test_archive.AMSR_LABELS = ["btemp_6.9h"]
         test_archive = Archive(input_dir = 'input',
                                output_dir = 'output',
-                               names_sar = ['sar1'],
+                               names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
                                names_amsr2 = ["btemp_6.9h"],
                                window_sar = 50,
                                window_amsr2 = 50,
@@ -218,7 +218,7 @@ class ArchiveTestCases(unittest.TestCase):
         # test_archive.AMSR_LABELS = ["btemp_6.9h"]
         test_archive = Archive(input_dir = 'input',
                                output_dir = 'output',
-                               names_sar = ['sar1'],
+                               names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
                                names_amsr2 = ["btemp_6.9h"],
                                window_sar = 50,
                                window_amsr2 = 50,
