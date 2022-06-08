@@ -8,6 +8,7 @@ TEST :
       make_batch
 
       convert
+      make_batch
 
       get_array
 
@@ -15,7 +16,3 @@ TEST :
       resample_amsr2
       write_batches
       process_dataset
-
-
-
-python build_dataset.py input output -n nersc_sar -w 400 -s 400

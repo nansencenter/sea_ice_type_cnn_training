@@ -1,7 +1,7 @@
 import unittest
 
 from tests.test_archive import (BatchesTestCases, SarBatchesTestCases,
-                                OutputBatchesTestCases, Amsr2BatchesTestCases,
+                                OutputBatchesTestCases, DistanceBatchesTestCases, Amsr2BatchesTestCases,
                                 ArchiveTestCases)
 
 if __name__ == '__main__':

@@ -4,11 +4,11 @@ from json import dump, load
 import time
 
 import numpy as np
+# import matplotlib.pyplot as plt
 from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
-
-# from hot_encoding_utils import one_hot_binary, one_hot_continous, ice_type
+from scipy.ndimage import distance_transform_edt
 
 
 class Batches:
@@ -28,7 +28,6 @@ class Batches:
         if len(array.shape)==3:
             window_size += (array.shape[2],)
             stride = (self.stride, self.stride, 1)
-
         return view_as_windows(array, window_size, stride)
 
     def name_conventer(self, name):
@@ -54,11 +53,9 @@ class Batches:
         batch = {}
         for element in self.loop_list:
             array = self.get_array(fil, self.name_for_getdata(element))
-
             views = self.view_as_windows(array)
             array_list = []
             array_locs = []
-
             for i in range(views.shape[0]):
                 for j in range(views.shape[1]):
                     if np.any(np.isnan(views[i,j,:,:])):
@@ -68,7 +65,6 @@ class Batches:
 
             batch[self.name_conventer(element)] = array_list
             batch[self.name_conventer(element) + '_loc'] = array_locs
-
         return batch
 
     def resample(self, fil, array):
@@ -76,6 +72,7 @@ class Batches:
         Do nothing for SAR and Output
         """
         return array
+
 
 class SarBatches(Batches):
     def __init__(self,archive_):
@@ -126,50 +123,103 @@ class OutputBatches(SarBatches):
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
         """
-        ic = array.copy()
-        n,p= ic.shape
-
-        #construction of the 3D array that will be filled
-        en_values_array=np.zeros((n,p,4))+np.nan
-
           # original dictionary should not be changed
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
         # each loop changes all locations of values_array (that have the very
         # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-
-            #Filling the 3D array
-            en_values_array[ic == id_value,:] = np.array(variable_belong_to_id)
-        return en_values_array.astype(self.astype)
+            if id_value==array[0][0] :
+                result=variable_belong_to_id
+        return result
 
     def resize(self, array):
-        """ return only one vector because all pixels in the view are in the same segment so the same information
         """
-        return array[0][0]
+        return only one vector because all pixels in the view are in the same segment so the same information
+        """
+        return array
 
     def make_batch(self, fil):
-            """
-            This function calculates the output matrix and store them in "batches_array" property of obj.
-            """
-            batch = {}
-            for element in self.loop_list:
-                array = self.get_array(fil, self.name_for_getdata(element))
-                views = self.view_as_windows(array)
-                array_list = []
-                array_locs = []
-                for i in range(views.shape[0]):
-                    for j in range(views.shape[1]):
-                        if np.any(np.isnan(views[i,j,:,:])):
-                            continue
-                        #if there are several different segments in the view, then we don't keep this view
-                        if(np.amax(views[i,j,:,:]) != np.amin(views[i,j,:,:])):
-                            continue
-                        array_list.append(self.resize(self.convert(views[i,j,:,:])))
-                        array_locs.append((i,j))
-                        batch[self.name_conventer(element)] = array_list
-                        batch[self.name_conventer(element) + '_loc'] = array_locs
-            # print((batch['ice_type']))
-            # print((batch['ice_type_loc']))
-            return batch
+        """
+        This function calculates the output matrix and store them in "batches_array" property of obj.
+        """
+        batch = {}
+        for element in self.loop_list:
+            array = self.get_array(fil, self.name_for_getdata(element))
+            views = self.view_as_windows(array)
+            array_list = []
+            array_locs = []
+            for i in range(views.shape[0]):
+                for j in range(views.shape[1]):
+                    if np.any(np.isnan(views[i,j,:,:])):
+                        continue
+                    #if there are several different segments in the view, then we don't keep this view
+                    if(np.amax(views[i,j,:,:]) != np.amin(views[i,j,:,:])):
+                        continue
+                    array_list.append(self.resize(self.convert(views[i,j,:,:])))
+                    array_locs.append((i,j))
+                    batch[self.name_conventer(element)] = array_list
+                    batch[self.name_conventer(element) + '_loc'] = array_locs
+        return batch
+
+
+class DistanceBatches(Batches):
+    def __init__(self, archive_):
+        self.map_id_to_variable_values = archive_.map_id_to_variable_values
+        self.names_polygon_codes = archive_.names_polygon_codes
+        self.loop_list = [0]
+        self.astype = np.float16
+        self.window = archive_.window_sar
+        self.stride = archive_.stride_sar
+        self.step = archive_.resize_step_sar
+
+    def get_array(self, fil, name):
+        poly=fil[name][:].astype(self.astype).filled(np.nan)
+        list_poly=np.unique(poly)
+        # print(list_poly)
+        distance=distance_transform_edt(poly==list_poly[0], return_distances=True, return_indices=False)
+        for id_poly in list_poly[1:] :
+            # print(id_poly)
+            distance1=distance_transform_edt(poly==id_poly, return_distances=True, return_indices=False)
+            distance[distance == 0] = distance1[distance == 0]
+        # plt.imshow(distance);plt.colorbar() ; plt.show()
+        return distance
+
+    def name_for_getdata(self, name):
+        return "polygon_icechart"
+
+    def convert(self, array):
+        """
+        return only the value of the distance for the middle pixel of the view
+        """
+        n,p=array.shape
+        return array[n//2][p//2]
+
+    def resize(self, array):
+        """
+        """
+        return array
+
+    def name_conventer(self, name):
+        return 'distance_border'
+
+    def make_batch(self, fil):
+        """
+        This function calculates the output matrix and store them in "batches_array" property of obj.
+        """
+        batch = {}
+        for element in self.loop_list:
+            array = self.get_array(fil, self.name_for_getdata(element))
+            views = self.view_as_windows(array)
+            array_list = []
+            array_locs = []
+            for i in range(views.shape[0]):
+                for j in range(views.shape[1]):
+                    if (views[i,j,:,:].size - np.count_nonzero(views[i,j,:,:])!=0):
+                        continue
+                    array_list.append(self.resize(self.convert(views[i,j,:,:])))
+                    array_locs.append((i,j))
+                    batch[self.name_conventer(element)] = array_list
+                    batch[self.name_conventer(element) + '_loc'] = array_locs
+        return batch
 
 
 class Amsr2Batches(Batches):
@@ -266,14 +316,7 @@ class Archive():
         # as a list at the 'value postion' of that key in the dictionary.
         for id_and_corresponding_variable_values in fil['polygon_codes'][1:]:
             id_val_splitted = id_and_corresponding_variable_values.split(";")
-            [ct, ca, sa, fa, cb, sb, fb, cc, sc, fc] = list(map(int, id_val_splitted[1:11]))
-            #result of the one-hot encoding
-            # one_hot_func = {
-            #     'binary': one_hot_binary,
-            #     'continous': one_hot_continous,
-            # }[self.encoding]
-            # result = one_hot_func(ct,ca,sa,fa,cb,sb,fb,cc,sc,fc)
-            result=[0,0.8,0.2,0]
+            result = list(map(int, id_val_splitted[1:11]))
             #Filling the dictionnary
             map_id_to_variable_values.update({int(id_val_splitted[0]): result})
         self.map_id_to_variable_values = map_id_to_variable_values
@@ -286,7 +329,6 @@ class Archive():
         self.line = np.arange(int(self.resample_step_amsr2/2), sar_shape[0], self.resample_step_amsr2)
         self.sample = np.arange(int(self.resample_step_amsr2/2), sar_shape[1], self.resample_step_amsr2)
         sample_grid, line_grid = np.meshgrid(self.sample, self.line)
-
         self.amsr2_data = {}
         for name in self.names_amsr2:
             x = fil[name][:].filled(np.nan)
@@ -304,36 +346,29 @@ class Archive():
         loc_names = [x for x in self.batches.keys() if x.endswith('_loc')]
 
         for i, loc in enumerate(self.batches[loc_names[0]]):
-
             # check that current loc is present in all locs
             loc_exists = True
             for loc_name in loc_names:
-
-
                 if loc not in self.batches[loc_name]:
-
                     loc_exists = False
                     break
             # skip if loc is not present in all
             if not loc_exists:
                 continue
-
             data = {}
             for iname, oname, lname in zip(inp_var_names, out_var_names, loc_names):
                 j = self.batches[lname].index(loc)
                 data[oname] = self.batches[iname][j]
             opath = os.path.join(self.output_dir, self.scene)
-
             ofilename = f'{opath}_{i:0>6}.npz'
             np.savez(ofilename, **data)
-
 
     def process_dataset(self, fil, filename):
         t0 = time.time()
         if self.check_file_healthiness(fil, filename):
             self.read_icechart_coding(fil, filename)
             self.resample_amsr2(fil)
-            for cls_ in [SarBatches, OutputBatches, Amsr2Batches]:
+            for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
                 obj = cls_(self)
                 print(obj)
                 batch = obj.make_batch(fil)

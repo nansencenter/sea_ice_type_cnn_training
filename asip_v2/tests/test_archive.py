@@ -3,27 +3,19 @@ import unittest
 import unittest.mock as mock
 
 import numpy as np
-from archive import Amsr2Batches, Archive, Batches, OutputBatches, SarBatches
+from archive import Amsr2Batches, Archive, Batches, OutputBatches, DistanceBatches, SarBatches
 
 from skimage.util.shape import view_as_windows
+from scipy.ndimage import distance_transform_edt
 
 
 class BatchesTestCases(unittest.TestCase):
     """tests for batches class"""
 
-
-    @mock.patch('utility.Archive.__init__', return_value=None)
-    def test_function_name_conventer(self, mock_archive):
-        """name_conventer should convert the name"""
+    def test_function_convert(self):
+        """first argument must be delivered with 'convert' function"""
         test_batch = Batches()
-        self.assertEqual(test_batch.name_conventer("btemp_89.0h"), "btemp_89.0h")
-
-
-    @mock.patch('utility.Archive.__init__', return_value=None)
-    def test_function_name_for_getdata(self, mock_archive):
-        """name_for_getdata should convert the name"""
-        test_batch = Batches()
-        self.assertEqual(test_batch.name_for_getdata("btemp_89.0h"), "btemp_89.0h")
+        self.assertEqual(test_batch.convert(1), 1)
 
     @mock.patch("archive.view_as_windows")
     def test_function_view_as_windows(self, mock_view_as_window):
@@ -35,17 +27,17 @@ class BatchesTestCases(unittest.TestCase):
         test_batch.view_as_windows(array)
         mock_view_as_window.assert_called_with(array, (2, 2), 4)
 
-    def test_function_convert(self):
-        """first argument must be delivered with 'convert' function"""
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_name_conventer(self, mock_archive):
+        """name_conventer should convert the name"""
         test_batch = Batches()
-        self.assertEqual(test_batch.convert(1), 1)
+        self.assertEqual(test_batch.name_conventer("btemp_89.0h"), "btemp_89.0h")
 
-
-    def test_function_resample(self):
-        """first argument must be delivered with 'resample' function"""
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_name_for_getdata(self, mock_archive):
+        """name_for_getdata should convert the name"""
         test_batch = Batches()
-        self.assertEqual(test_batch.resample(1,1), 1)
-
+        self.assertEqual(test_batch.name_for_getdata("btemp_89.0h"), "btemp_89.0h")
 
     def test_function_resize(self):
         """
@@ -66,6 +58,11 @@ class BatchesTestCases(unittest.TestCase):
         ## for non-dividable case
         np.testing.assert_equal(test_batch.resize(array), np.array([[0, 2], [10, 12]]))
 
+    def test_function_resample(self):
+        """return only array"""
+        test_batch = Batches()
+        array = np.arange(25).reshape(5, 5)
+        np.testing.assert_equal(test_batch.resample(1, array), array)
 
 
 
@@ -96,6 +93,7 @@ class SarBatchesTestCases(unittest.TestCase):
 
 class OutputBatchesTestCases(unittest.TestCase):
     """tests for OutputBatches class"""
+
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_name_conventer(self, mock_archive):
         """name_conventer should return the correct names"""
@@ -118,8 +116,62 @@ class OutputBatchesTestCases(unittest.TestCase):
     #     test_batch.convert('1', "2")
     #     mock_encode.assert_called_once_with('1', "2")
 
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_resize(self, mock_archive):
+        """return only array"""
+        test_batch = OutputBatches(archive_=mock_archive)
+        array = np.arange(25).reshape(5, 5)
+        np.testing.assert_equal(test_batch.resize(array), array)
 
+class DistanceBatchesTestCases(unittest.TestCase):
+    """tests for DistanceBatches class"""
 
+    # @mock.patch('utility.Archive.__init__', return_value=None)
+    # def test_function_get_array(self, mock_archive):
+    #     """get_array function for un array with two segments """
+    #     test_batch = DistanceBatches(archive_=mock_archive)
+    #     fil = {"polygon_icechart": np.array([[0,0,0,1,1],
+    #                                 [0,0,1,1,1],
+    #                                 [0,1,1,1,1],
+    #                                 [1,1,1,1,1],
+    #                                 [1,1,1,1,1]]),
+    #             "polygon_code": None}
+    #
+    #     # test_batch.fil=array
+    #     np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"), distance_transform_edt(array==1,return_distances=True, return_indices=False))
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_name_for_getdata(self, mock_archive):
+        """name_for_getdata should always return a constant value"""
+        test_batch = DistanceBatches(archive_=mock_archive)
+        self.assertEqual(test_batch.name_for_getdata(""), "polygon_icechart")
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_convert(self, mock_archive):
+        """convert return only the pixel of the middle """
+        test_batch = DistanceBatches(archive_=mock_archive)
+        array =  np.arange(16).reshape(4, 4)
+        np.testing.assert_equal(test_batch.convert(array), 10)
+        array = np.arange(25).reshape(5, 5)
+        #array=np.array([[ 0,  1,  2,  3,  4],
+        #                [ 5,  6,  7,  8,  9],
+        #                [10, 11, 12, 13, 14],
+        #                [15, 16, 17, 18, 19],
+        #                [20, 21, 22, 23, 24]])
+        np.testing.assert_equal(test_batch.convert(array), 12)
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_resize(self, mock_archive):
+        """return only array"""
+        test_batch = DistanceBatches(archive_=mock_archive)
+        array = np.arange(25).reshape(5, 5)
+        np.testing.assert_equal(test_batch.resize(array), array)
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_name_conventer(self, mock_archive):
+        """name_conventer should return the correct names"""
+        test_batch = DistanceBatches(archive_=mock_archive)
+        self.assertEqual(test_batch.name_conventer(""), "distance_border")
 
 
 class Amsr2BatchesTestCases(unittest.TestCase):
@@ -299,7 +351,19 @@ class ArchiveTestCases(unittest.TestCase):
     #             # It does nothing in the test.
     #            "polygon_icechart": None}
     #     filename = '20180410T084537_S1B_AMSR2_'
-    #     test_archive = Archive()
+    #     test_archive = Archive(input_dir = 'input',
+    #                             output_dir = 'output',
+    #                             names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
+    #                             names_amsr2 = ['btemp_6.9h', 'btemp_6.9v'],
+    #                             window_sar = 500,
+    #                             window_amsr2 = 10,
+    #                             stride_sar = 500,
+    #                             stride_amsr2 = 10,
+    #                             resample_step_amsr2 = 10,
+    #                             resize_step_sar = 10,
+    #                             rm_swath = 5,
+    #                             distance_threshold = 10,
+    #                             encoding = "one_hot_binary")
     #     test_archive.read_icechart_coding(fil, filename)
     #     self.assertEqual(test_archive.scene, '20180410T084537')
     #     self.assertEqual(test_archive.names_polygon_codes,
