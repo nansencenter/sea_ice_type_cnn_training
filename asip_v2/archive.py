@@ -4,7 +4,6 @@ from json import dump, load
 import time
 
 import numpy as np
-# import matplotlib.pyplot as plt
 from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
@@ -62,7 +61,6 @@ class Batches:
                         continue
                     array_list.append(self.resize(self.convert(views[i,j,:,:])))
                     array_locs.append((i,j))
-
             batch[self.name_conventer(element)] = array_list
             batch[self.name_conventer(element) + '_loc'] = array_locs
         return batch
@@ -122,19 +120,14 @@ class OutputBatches(SarBatches):
         """
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
+        return only one vector because all pixels in the view are in the same segment so the same information
         """
-          # original dictionary should not be changed
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-        # each loop changes all locations of values_array (that have the very
-        # 'id_value') to its corresponding value inside 'variable_belong_to_id'
-            if id_value==array[0][0] :
+            if id_value==array[0][0]:
                 result=variable_belong_to_id
         return result
 
     def resize(self, array):
-        """
-        return only one vector because all pixels in the view are in the same segment so the same information
-        """
         return array
 
     def make_batch(self, fil):
@@ -172,15 +165,15 @@ class DistanceBatches(Batches):
         self.step = archive_.resize_step_sar
 
     def get_array(self, fil, name):
+        """
+        create the distance matrix between the pixels and the borders of the icechart polygons 
+        """
         poly=fil[name][:].astype(self.astype).filled(np.nan)
         list_poly=np.unique(poly)
-        # print(list_poly)
         distance=distance_transform_edt(poly==list_poly[0], return_distances=True, return_indices=False)
         for id_poly in list_poly[1:] :
-            # print(id_poly)
             distance1=distance_transform_edt(poly==id_poly, return_distances=True, return_indices=False)
             distance[distance == 0] = distance1[distance == 0]
-        # plt.imshow(distance);plt.colorbar() ; plt.show()
         return distance
 
     def name_for_getdata(self, name):
@@ -194,8 +187,6 @@ class DistanceBatches(Batches):
         return array[n//2][p//2]
 
     def resize(self, array):
-        """
-        """
         return array
 
     def name_conventer(self, name):
@@ -203,7 +194,7 @@ class DistanceBatches(Batches):
 
     def make_batch(self, fil):
         """
-        This function calculates the output matrix and store them in "batches_array" property of obj.
+        This function calculates the output matrix of distance and store them in "batches_array" property of obj.
         """
         batch = {}
         for element in self.loop_list:
@@ -213,6 +204,7 @@ class DistanceBatches(Batches):
             array_locs = []
             for i in range(views.shape[0]):
                 for j in range(views.shape[1]):
+                    #if there is at least one zero in the view then this view is not kept
                     if (views[i,j,:,:].size - np.count_nonzero(views[i,j,:,:])!=0):
                         continue
                     array_list.append(self.resize(self.convert(views[i,j,:,:])))
@@ -370,7 +362,6 @@ class Archive():
             self.resample_amsr2(fil)
             for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
                 obj = cls_(self)
-                print(obj)
                 batch = obj.make_batch(fil)
                 self.batches.update(batch)
                 del obj
