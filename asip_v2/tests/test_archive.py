@@ -9,8 +9,22 @@ from skimage.util.shape import view_as_windows
 from scipy.ndimage import distance_transform_edt
 
 
+
 class BatchesTestCases(unittest.TestCase):
     """tests for batches class"""
+
+    def test_function_get_array(self):
+        """get_array function shall be called correctly """
+        test_batch = Batches()
+        test_batch.astype=np.float32
+        fil = {"nersc_sar_primary": np.ma.masked_array(np.array([[0,0,0,1,1],
+                                                                 [0,0,1,1,1],
+                                                                 [0,1,1,1,1],
+                                                                 [1,1,1,1,1],
+                                                                 [1,1,1,1,1]])),
+                "nersc_sar_secondary": None}
+        array=fil["nersc_sar_primary"][:]
+        np.testing.assert_equal(test_batch.get_array(fil,"nersc_sar_primary"),array)
 
     def test_function_convert(self):
         """first argument must be delivered with 'convert' function"""
@@ -107,14 +121,14 @@ class OutputBatchesTestCases(unittest.TestCase):
         test_batch = OutputBatches(archive_=mock_archive)
         self.assertEqual(test_batch.name_for_getdata(""), "polygon_icechart")
 
-
-    # @mock.patch("archive.OutputBatches.encode_icechart")
-    # @mock.patch('utility.Archive.__init__', return_value=None)
-    # def test_function_convert(self, mock_archive, mock_encode):
-    #     """encode_icechart function must be called with correct arguments"""
-    #     test_batch = OutputBatches(archive_=mock_archive)
-    #     test_batch.convert('1', "2")
-    #     mock_encode.assert_called_once_with('1', "2")
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_convert(self, mock_archive):
+        """convert function must be called with correct arguments"""
+        test_batch = OutputBatches(archive_=mock_archive)
+        test_batch.map_id_to_variable_values={33: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', 'I'],
+                                              35: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I']}
+        array = np.ones((5,5))*35
+        np.testing.assert_equal(test_batch.convert(array), ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I'])
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_resize(self, mock_archive):
@@ -126,19 +140,22 @@ class OutputBatchesTestCases(unittest.TestCase):
 class DistanceBatchesTestCases(unittest.TestCase):
     """tests for DistanceBatches class"""
 
-    # @mock.patch('utility.Archive.__init__', return_value=None)
-    # def test_function_get_array(self, mock_archive):
-    #     """get_array function for un array with two segments """
-    #     test_batch = DistanceBatches(archive_=mock_archive)
-    #     fil = {"polygon_icechart": np.array([[0,0,0,1,1],
-    #                                 [0,0,1,1,1],
-    #                                 [0,1,1,1,1],
-    #                                 [1,1,1,1,1],
-    #                                 [1,1,1,1,1]]),
-    #             "polygon_code": None}
-    #
-    #     # test_batch.fil=array
-    #     np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"), distance_transform_edt(array==1,return_distances=True, return_indices=False))
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_get_array(self, mock_archive):
+        """get_array function shall be called correctly"""
+        test_batch = DistanceBatches(archive_=mock_archive)
+        test_batch.astype=np.float32
+        fil = {"polygon_icechart": np.ma.masked_array(np.array([[0,0,0,1,1],
+                                                                [0,0,1,1,1],
+                                                                [0,1,1,1,1],
+                                                                [1,1,1,1,1],
+                                                                [1,1,1,1,1]])),
+                "polygon_code": None}
+        array=fil["polygon_icechart"][:]
+        dis0 = distance_transform_edt(array==0,return_distances=True, return_indices=False)
+        dis1 = distance_transform_edt(array==1,return_distances=True, return_indices=False)
+        dis0[dis0 == 0] = dis1[dis0 == 0]
+        np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis0)
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_name_for_getdata(self, mock_archive):
@@ -189,6 +206,22 @@ class Amsr2BatchesTestCases(unittest.TestCase):
         """resize of the parent class must be called"""
         test_batch = Amsr2Batches(archive_=mock_archive)
         self.assertEqual(test_batch.resize(1), 1)
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_get_array(self, mock_archive):
+        """get_array function shall be called correctly"""
+        test_batch = Amsr2Batches(archive_=mock_archive)
+        test_batch.astype=np.float32
+
+        fil = {"btemp_89.0h": np.ma.masked_array(np.array([[0,0,0,1,1],
+                                                           [0,0,1,1,1],
+                                                           [0,1,1,1,1],
+                                                           [1,1,1,1,1],
+                                                           [1,1,1,1,1]])),
+                "btemp_89.0v": None}
+        test_batch._archive.amsr2_data=fil
+        array=fil["btemp_89.0h"][:]
+        np.testing.assert_equal(test_batch.get_array(fil,"btemp_89.0h"),array)
 
 
 class ArchiveTestCases(unittest.TestCase):
@@ -341,116 +374,106 @@ class ArchiveTestCases(unittest.TestCase):
                        )
         self.assertTrue(test_archive.check_file_healthiness(fil, "fake_name"))
 
-    # @mock.patch("archive.np.ma.getdata", return_value=np.array(((1, 2), (3, 4))))
-    # def test_function_read_icechart_coding(self, mock_get_data):
-    #     """test the reading activities of icechart and coding it"""
-    #     fil = {"polygon_codes": ['id;CT;CA;SA;FA;CB;SB;FB;CC;SC;FC;CN;CD;CF;POLY_TYPE',
-    #                              '33;92;-9;91; 8;-9;-9;-9;-9;-9;-9;-9;-9;-9;I',
-    #                              '35;92;-9;91; 8;-9;-9;-9;-9;-9;-9;98;-9;-9;I'],
-    #             # just because it is argument of 'getdata','polygon_icechart' needs to be in dict.
-    #             # It does nothing in the test.
-    #            "polygon_icechart": None}
-    #     filename = '20180410T084537_S1B_AMSR2_'
-    #     test_archive = Archive(input_dir = 'input',
-    #                             output_dir = 'output',
-    #                             names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
-    #                             names_amsr2 = ['btemp_6.9h', 'btemp_6.9v'],
-    #                             window_sar = 500,
-    #                             window_amsr2 = 10,
-    #                             stride_sar = 500,
-    #                             stride_amsr2 = 10,
-    #                             resample_step_amsr2 = 10,
-    #                             resize_step_sar = 10,
-    #                             rm_swath = 5,
-    #                             distance_threshold = 10,
-    #                             encoding = "one_hot_binary")
-    #     test_archive.read_icechart_coding(fil, filename)
-    #     self.assertEqual(test_archive.scene, '20180410T084537')
-    #     self.assertEqual(test_archive.names_polygon_codes,
-    #                      ['id', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC'])
-    #     np.testing.assert_equal(test_archive.polygon_ids, np.array([[1, 2], [3, 4]]))
-    #     self.assertEqual(test_archive.map_id_to_variable_values, {
-    #         33: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', 'I'],
-    #         35: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I']
-    #                                                              })
+    @mock.patch("archive.np.ma.getdata", return_value=np.array(((1, 2), (3, 4))))
+    def test_function_read_icechart_coding(self, mock_get_data):
+        """test the reading activities of icechart and coding it"""
+        fil = {"polygon_codes": ['id;CT;CA;SA;FA;CB;SB;FB;CC;SC;FC;CN;CD;CF;POLY_TYPE',
+                                 '33;92;-9;91; 8;-9;-9;-9;-9;-9;-9;-9;-9;-9;I',
+                                 '35;92;-9;91; 8;-9;-9;-9;-9;-9;-9;98;-9;-9;I'],
+                # just because it is argument of 'getdata','polygon_icechart' needs to be in dict.
+                # It does nothing in the test.
+               "polygon_icechart": None}
+        filename = '20180410T084537_S1B_AMSR2_'
+        test_archive = Archive(input_dir = 'input',
+                                output_dir = 'output',
+                                names_sar = ['nersc_sar_primary','nersc_sar_secondary'],
+                                names_amsr2 = ['btemp_6.9h', 'btemp_6.9v'],
+                                window_sar = 500,
+                                window_amsr2 = 10,
+                                stride_sar = 500,
+                                stride_amsr2 = 10,
+                                resample_step_amsr2 = 10,
+                                resize_step_sar = 10,
+                                rm_swath = 5,
+                                distance_threshold = 10,
+                                encoding = "one_hot_binary")
+        test_archive.read_icechart_coding(fil, filename)
+        self.assertEqual(test_archive.scene, '20180410T084537')
+        self.assertEqual(test_archive.names_polygon_codes,
+                         ['id', 'CT', 'CA', 'SA', 'FA', 'CB', 'SB', 'FB', 'CC', 'SC', 'FC'])
+        np.testing.assert_equal(test_archive.polygon_ids, np.array([[1, 2], [3, 4]]))
+        self.assertEqual(test_archive.map_id_to_variable_values, {
+            33: [92, -9, 91,  8, -9, -9, -9, -9, -9, -9],
+            35: [92, -9, 91,  8, -9, -9, -9, -9, -9, -9]})
 
 
-    # @mock.patch("archive.np.savez")
-    # def test_function_write_batches(self, mock_savez):
-    #     """Test writing the correct content with a correct filename into npz files"""
-    #     test_archive = Archive(input_dir = "20180410T084537",
-    #                            output_dir = "/etc",
-    #                            names_sar = ['sar'],
-    #                            names_amsr2 = ["btemp_6.9h"],
-    #                            window_sar = 50,
-    #                            window_amsr2 = 50,
-    #                            stride_sar = 50,
-    #                            stride_amsr2 = 50,
-    #                            resample_step_amsr2 = 50,
-    #                            resize_step_sar = 50,
-    #                            rm_swath = 0,
-    #                            distance_threshold = 50,
-    #                            encoding = "one_hot_binary")
-    #     # test_archive.scene = "20180410T084537"
-    #     # test_archive.OUTPATH = "/etc"
-    #     # test_archive.NERSC = "nersc_"
-    #     # test_archive.final_ful_mask = None
-    #     # test_archive.final_mask_with_amsr2_size = None
-    #     # test_archive.SAR_NAMES = ['sar']
-    #     # test_archive.AMSR_LABELS = ['btemp_6.9h']
-    #     # test_archive.names_polygon_codes = ['id', 'CT']
-    #     test_archive.PROP = {'sar': [7, 8, 9],
-    #                          'btemp_6_9h': [4, 5, 6],
-    #                          'CT': [1, 2, 3],
-    #                          '_locs': [(11, 12), (13, 14), (15, 16)]}
-    #     test_archive.write_batches()
-    #     self.assertEqual(mock_savez.call_args_list[0],
-    #                      mock.call('/etc/20180410T084537_000000_nersc_-11_12',
-    #                                sar=7, btemp_6_9h=4, CT=1, _locs=(11, 12)
-    #                               )
-    #                     )
-    #     self.assertEqual(mock_savez.call_args_list[1],
-    #                      mock.call('/etc/20180410T084537_000001_nersc_-13_14',
-    #                                sar=8, btemp_6_9h=5, CT=2, _locs=(13, 14)
-    #                               )
-    #                     )
-    #     self.assertEqual(mock_savez.call_args_list[2],
-    #                      mock.call('/etc/20180410T084537_000002_nersc_-15_16',
-    #                                sar=9, btemp_6_9h=6, CT=3, _locs=(15, 16)
-    #                               )
-    #                     )
+    @mock.patch("archive.np.savez")
+    def test_function_write_batches(self, mock_savez):
+        """Test writing the correct content with a correct filename into npz files"""
+        test_archive = Archive(input_dir = "20180410T084537",
+                               output_dir = "/etc",
+                               names_sar = ['sar'],
+                               names_amsr2 = ["btemp_6.9h"],
+                               window_sar = 50,
+                               window_amsr2 = 50,
+                               stride_sar = 50,
+                               stride_amsr2 = 50,
+                               resample_step_amsr2 = 50,
+                               resize_step_sar = 50,
+                               rm_swath = 0,
+                               distance_threshold = 50,
+                               encoding = "one_hot_binary")
+        test_archive.scene = "20180410T084537"
+        # test_archive.OUTPATH = "/etc"
+        # test_archive.NERSC = "nersc_"
+        # test_archive.final_ful_mask = None
+        # test_archive.final_mask_with_amsr2_size = None
+        # test_archive.SAR_NAMES = ['sar']
+        # test_archive.AMSR_LABELS = ['btemp_6.9h']
+        # test_archive.names_polygon_codes = ['id', 'CT']
+        test_archive.batches = {'sar': [7, 8, 9],
+                             'btemp_6_9h': [4, 5, 6],
+                             'CT': [1, 2, 3],
+                             '_loc': [(11, 12), (13, 14), (15, 16)]}
+        test_archive.write_batches()
+        self.assertEqual(mock_savez.call_args_list[0],
+                         mock.call('/etc/20180410T084537_000000.npz',
+                                   sar=7)
+                        )
+        self.assertEqual(mock_savez.call_args_list[1],
+                         mock.call('/etc/20180410T084537_000001.npz',
+                                   sar=8)
+                        )
+        self.assertEqual(mock_savez.call_args_list[2],
+                         mock.call('/etc/20180410T084537_000002.npz',
+                                   sar=9)
+                        )
 
 
     # @mock.patch('archive.Amsr2Batches.__init__', return_value=None)
     # @mock.patch('archive.SarBatches.__init__', return_value=None)
     # @mock.patch('archive.OutputBatches.__init__', return_value=None)
     # @mock.patch('archive.Archive.__init__', return_value=None)
+    # @mock.patch('archive.DistanceBatches.__init__', return_value=None)
     # @mock.patch("archive.view_as_windows")
     # @mock.patch("archive.Archive.check_file_healthiness")
     # @mock.patch("archive.Archive.read_icechart_coding")
-    # @mock.patch("archive.Archive.calculate_mask")
-    # @mock.patch("archive.Archive.calculate_batches_for_masks")
-    # @mock.patch("archive.Batches.pad_and_batch")
-    # @mock.patch("archive.Batches.calculate_variable_ML", side_effect=[{1: 1}, {2: 2}, {3: 3}])
-    # def test_function_process_dataset(self, mock_variable_ML, mock_pad_and_batch,
-    #         mock_batches_for_masks, mock_calculate_mask, mock_read, mock_check, mock_view_as_win,
-    #         mock_init_Archive, mock_init_Output_ba, mock_init_Sar_ba, mock_init_Amsr2_ba):
+    # def test_function_process_dataset(self, mock_read, mock_check, mock_view_as_win,
+    #         mock_init_Distance_ba, mock_init_Archive, mock_init_Output_ba, mock_init_Sar_ba, mock_init_Amsr2_ba):
     #     """Test that the functions are called correctly and the PROP is correctly updated"""
     #     fil = mock.Mock()
     #     filename = mock.Mock()
     #     test_archive = Archive()
-    #     test_archive.PROP = {}
+    #     test_archive.batches = {}
     #     test_archive.mask_batches_amsr2 = None
     #     test_archive.mask_batches = None
     #     test_archive.process_dataset(fil, filename)
     #     # PROP must be assembled version of output of function
     #     # which is created stepwisely with side effect
-    #     self.assertEqual(test_archive.PROP, {1: 1, 2: 2, 3: 3})
+    #     self.assertEqual(test_archive.batches, {1: 1, 2: 2, 3: 3, 4: 4})
     #     mock_check.assert_called_once()
     #     mock_read.assert_called_once()
-    #     mock_calculate_mask.assert_called_once()
-    #     mock_batches_for_masks.assert_called_once()
-    #     mock_pad_and_batch.assert_called()
     #     mock_init_Output_ba.assert_called_once()
     #     mock_init_Sar_ba.assert_called_once()
     #     mock_init_Amsr2_ba.assert_called_once()
+    #     mock_init_Distance_ba.assert_called_once()
