@@ -4,15 +4,9 @@ docker run --entrypoint coverage -v C:\Users\Utilisateur\Desktop\internship\sea_
 
 TEST :
   *archive :
-      get_array
       make_batch
-
-      convert
       make_batch
-
-      get_array
-
-      read_icechart_coding
+      make_batch
+      
       resample_amsr2
-      write_batches
       process_dataset

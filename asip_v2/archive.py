@@ -207,7 +207,7 @@ class DistanceBatches(Batches):
                     #if there is at least one zero in the view then this view is not kept
                     if (views[i,j,:,:].size - np.count_nonzero(views[i,j,:,:])!=0):
                         continue
-                    array_list.append(self.resize(self.convert(views[i,j,:,:])))
+                    array_list.append([self.resize(self.convert(views[i,j,:,:]))])
                     array_locs.append((i,j))
                     batch[self.name_conventer(element)] = array_list
                     batch[self.name_conventer(element) + '_loc'] = array_locs
