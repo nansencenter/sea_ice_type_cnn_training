@@ -57,7 +57,7 @@ class Batches:
             array_locs = []
             for i in range(views.shape[0]):
                 for j in range(views.shape[1]):
-                    if np.any(np.isnan(views[i,j,:,:])):
+                    if (self.check_view(views[i,j,:,:])):
                         continue
                     array_list.append(self.resize(self.convert(views[i,j,:,:])))
                     array_locs.append((i,j))
@@ -70,6 +70,15 @@ class Batches:
         Do nothing for SAR and Output
         """
         return array
+    
+    def check_view(self,view):
+        """
+        to know if there is a nan in the view
+        """
+        bol=False
+        if np.any(np.isnan(view[:,:])):
+            bol=True
+        return bol
 
 
 class SarBatches(Batches):
@@ -129,29 +138,17 @@ class OutputBatches(SarBatches):
 
     def resize(self, array):
         return array
-
-    def make_batch(self, fil):
+    
+    def check_view(self,view):
         """
-        This function calculates the output matrix and store them in "batches_array" property of obj.
+        to know if there is a nan in the view and if there are several different segments in the view
         """
-        batch = {}
-        for element in self.loop_list:
-            array = self.get_array(fil, self.name_for_getdata(element))
-            views = self.view_as_windows(array)
-            array_list = []
-            array_locs = []
-            for i in range(views.shape[0]):
-                for j in range(views.shape[1]):
-                    if np.any(np.isnan(views[i,j,:,:])):
-                        continue
-                    #if there are several different segments in the view, then we don't keep this view
-                    if(np.amax(views[i,j,:,:]) != np.amin(views[i,j,:,:])):
-                        continue
-                    array_list.append(self.resize(self.convert(views[i,j,:,:])))
-                    array_locs.append((i,j))
-                    batch[self.name_conventer(element)] = array_list
-                    batch[self.name_conventer(element) + '_loc'] = array_locs
-        return batch
+        bol=False
+        if np.any(np.isnan(view[:,:])):
+            bol=True
+        if(np.amax(view[:,:]) != np.amin(view[:,:])):
+            bol=True
+        return bol
 
 
 class DistanceBatches(Batches):
@@ -192,26 +189,14 @@ class DistanceBatches(Batches):
     def name_conventer(self, name):
         return 'distance_border'
 
-    def make_batch(self, fil):
+    def check_view(self,view):
         """
-        This function calculates the output matrix of distance and store them in "batches_array" property of obj.
+        to know if there is a nan in the view
         """
-        batch = {}
-        for element in self.loop_list:
-            array = self.get_array(fil, self.name_for_getdata(element))
-            views = self.view_as_windows(array)
-            array_list = []
-            array_locs = []
-            for i in range(views.shape[0]):
-                for j in range(views.shape[1]):
-                    #if there is at least one zero in the view then this view is not kept
-                    if (views[i,j,:,:].size - np.count_nonzero(views[i,j,:,:])!=0):
-                        continue
-                    array_list.append([self.resize(self.convert(views[i,j,:,:]))])
-                    array_locs.append((i,j))
-                    batch[self.name_conventer(element)] = array_list
-                    batch[self.name_conventer(element) + '_loc'] = array_locs
-        return batch
+        bol=False
+        if (view[:,:].size - np.count_nonzero(view[:,:])!=0):
+            bol=True
+        return bol
 
 
 class Amsr2Batches(Batches):
