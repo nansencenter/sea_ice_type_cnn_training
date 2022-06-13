@@ -79,6 +79,24 @@ class BatchesTestCases(unittest.TestCase):
         np.testing.assert_equal(test_batch.resample(1, array), array)
 
 
+    def test_function_check_view(self):
+        """return boolean if there are a nan in the view"""
+        test_batch = Batches()
+        array=np.array([[ 0,  1,  2,  3,  4],
+                       [ 5,  6,  7,  8,  9],
+                       [10, 11, 12, 13, 14],
+                       [15, 16, 17, 18, 19],
+                       [20, 21, 22, 23, 24]])
+        np.testing.assert_equal(test_batch.check_view(array), False)
+        array=np.array([[ np.nan,  1,  2,  3,  4],
+                       [ 5,  6,  7,  8,  9],
+                       [10, 11, 12, 13, 14],
+                       [15, 16, 17, 18, 19],
+                       [20, 21, 22, 23, 24]])
+        np.testing.assert_equal(test_batch.check_view(array), True)
+
+
+
 
 class SarBatchesTestCases(unittest.TestCase):
     """tests for SarBatches class"""
@@ -137,6 +155,25 @@ class OutputBatchesTestCases(unittest.TestCase):
         array = np.arange(25).reshape(5, 5)
         np.testing.assert_equal(test_batch.resize(array), array)
 
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_check_view(self, mock_archive):
+        """return boolean if there are  nan in the view or if there are not the same number"""
+        test_batch = OutputBatches(archive_=mock_archive)
+        array=np.array([[ 0,  1,  2,  3,  4],
+                       [ 5,  6,  7,  8,  9],
+                       [10, 11, 12, 13, 14],
+                       [15, 16, 17, 18, 19],
+                       [20, 21, 22, 23, 24]])
+        np.testing.assert_equal(test_batch.check_view(array), True)
+        array=np.array([[ np.nan,  1,  1,  1, 1],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 1, 1]])
+        np.testing.assert_equal(test_batch.check_view(array), True)
+        array=np.ones((5,5))
+        np.testing.assert_equal(test_batch.check_view(array), False)
+
 class DistanceBatchesTestCases(unittest.TestCase):
     """tests for DistanceBatches class"""
 
@@ -189,6 +226,15 @@ class DistanceBatchesTestCases(unittest.TestCase):
         """name_conventer should return the correct names"""
         test_batch = DistanceBatches(archive_=mock_archive)
         self.assertEqual(test_batch.name_conventer(""), "distance_border")
+
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_check_view(self, mock_archive):
+        """return boolean if there are 0 in the view"""
+        test_batch = DistanceBatches(archive_=mock_archive)
+        array = np.arange(25).reshape(5, 5)
+        np.testing.assert_equal(test_batch.check_view(array), True)
+        array=np.ones((5,5))
+        np.testing.assert_equal(test_batch.check_view(array), False)
 
 
 class Amsr2BatchesTestCases(unittest.TestCase):
