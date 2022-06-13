@@ -184,7 +184,7 @@ class DistanceBatches(Batches):
         return array[n//2][p//2]
 
     def resize(self, array):
-        return array
+        return [array]
 
     def name_conventer(self, name):
         return 'distance_border'
