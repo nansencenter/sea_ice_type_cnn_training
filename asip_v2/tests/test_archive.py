@@ -182,7 +182,7 @@ class DistanceBatchesTestCases(unittest.TestCase):
         """return only array"""
         test_batch = DistanceBatches(archive_=mock_archive)
         array = np.arange(25).reshape(5, 5)
-        np.testing.assert_equal(test_batch.resize(array), array)
+        np.testing.assert_equal(test_batch.resize(array), [array])
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_name_conventer(self, mock_archive):
