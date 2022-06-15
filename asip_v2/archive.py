@@ -344,8 +344,9 @@ class Archive():
         t0 = time.time()
         if self.check_file_healthiness(fil, filename):
             self.read_icechart_coding(fil, filename)
-            self.resample_amsr2(fil)
-            for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
+#             self.resample_amsr2(fil)
+#             for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
+            for cls_ in [OutputBatches, DistanceBatches]:
                 obj = cls_(self)
                 batch = obj.make_batch(fil)
                 self.batches.update(batch)
