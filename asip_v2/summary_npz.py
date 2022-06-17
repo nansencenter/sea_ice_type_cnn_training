@@ -8,7 +8,7 @@ with open(f'{idir}/output/processed_files.json') as fichier_json:
 
 for nc in all_nc :
     name = nc[:15]
-    npz_files = sorted(glob.glob(f'{idir}/output/{name}*.npz'))
+    npz_files = sorted(glob.glob(f'{idir}/output/{name}/*.npz'))
     array = []
     for npz_file in npz_files:
         d = np.load(npz_file)

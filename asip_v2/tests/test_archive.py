@@ -78,7 +78,6 @@ class BatchesTestCases(unittest.TestCase):
         array = np.arange(25).reshape(5, 5)
         np.testing.assert_equal(test_batch.resample(1, array), array)
 
-
     def test_function_check_view(self):
         """return boolean if there are a nan in the view"""
         test_batch = Batches()
@@ -95,6 +94,16 @@ class BatchesTestCases(unittest.TestCase):
                        [20, 21, 22, 23, 24]])
         np.testing.assert_equal(test_batch.check_view(array), True)
 
+    def test_function_check_json(self):
+        """return true for sar and amsr2"""
+        test_batch = Batches()
+        array=np.array([[ 0,  1,  2,  3,  4],
+                       [ 5,  6,  7,  8,  9],
+                       [10, 11, 12, 13, 14],
+                       [15, 16, 17, 18, 19],
+                       [20, 21, 22, 23, 24]])
+        list_comb = [1,2]
+        np.testing.assert_equal(test_batch.check_json(array, list_comb),True)
 
 
 
@@ -174,6 +183,18 @@ class OutputBatchesTestCases(unittest.TestCase):
         array=np.ones((5,5))
         np.testing.assert_equal(test_batch.check_view(array), False)
 
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_check_json(self, mock_archive):
+        """return """
+        test_batch = OutputBatches(archive_=mock_archive)
+        vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
+        test = [90, 50, 83, 5, 30, 87, 6, 10, 93, 6]
+        np.testing.assert_equal(test_batch.check_json(test, vector_combination), True)
+        test = [90, 50, 81, 7, 30, 87, 6, 10, 93, 6]
+        np.testing.assert_equal(test_batch.check_json(test, vector_combination), False)
+
+
+
 class DistanceBatchesTestCases(unittest.TestCase):
     """tests for DistanceBatches class"""
 
@@ -189,10 +210,16 @@ class DistanceBatchesTestCases(unittest.TestCase):
                                                                 [1,1,1,1,1]])),
                 "polygon_code": None}
         array=fil["polygon_icechart"][:]
-        dis0 = distance_transform_edt(array==0,return_distances=True, return_indices=False)
-        dis1 = distance_transform_edt(array==1,return_distances=True, return_indices=False)
-        dis0[dis0 == 0] = dis1[dis0 == 0]
-        np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis0)
+        # dis0 = distance_transform_edt(array==0,return_distances=True, return_indices=False)
+        # dis1 = distance_transform_edt(array==1,return_distances=True, return_indices=False)
+        # dis0[dis0 == 0] = dis1[dis0 == 0]
+        dis1=np.array([[1,1,1,1,1],
+                       [1,1,1,1,1],
+                       [1,1,1,1,1],
+                       [1,1,1,1,1],
+                       [1,1,1,1,1]])
+
+        np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis1)
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_name_for_getdata(self, mock_archive):
@@ -236,6 +263,15 @@ class DistanceBatchesTestCases(unittest.TestCase):
         array=np.ones((5,5))
         np.testing.assert_equal(test_batch.check_view(array), False)
 
+        @mock.patch('utility.Archive.__init__', return_value=None)
+        def test_function_check_json(self, mock_archive):
+            """return """
+            test_batch = DistanceBatches(archive_=mock_archive)
+            vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
+            test = [0.25]
+            np.testing.assert_equal(test_batch.check_json(test, vector_combination), False)
+            test = [50.25]
+            np.testing.assert_equal(test_batch.check_json(test, vector_combination), True)
 
 class Amsr2BatchesTestCases(unittest.TestCase):
     """tests for Amsr2Batches class"""
@@ -483,15 +519,15 @@ class ArchiveTestCases(unittest.TestCase):
                              '_loc': [(11, 12), (13, 14), (15, 16)]}
         test_archive.write_batches()
         self.assertEqual(mock_savez.call_args_list[0],
-                         mock.call('/etc/20180410T084537_000000.npz',
+                         mock.call('/etc/20180410T084537/000000.npz',
                                    sar=7)
                         )
         self.assertEqual(mock_savez.call_args_list[1],
-                         mock.call('/etc/20180410T084537_000001.npz',
+                         mock.call('/etc/20180410T084537/000001.npz',
                                    sar=8)
                         )
         self.assertEqual(mock_savez.call_args_list[2],
-                         mock.call('/etc/20180410T084537_000002.npz',
+                         mock.call('/etc/20180410T084537/000002.npz',
                                    sar=9)
                         )
 

@@ -4,10 +4,11 @@ from json import dump, load
 import time
 
 import numpy as np
+import json
 from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, zoom
 
 
 class Batches:
@@ -59,7 +60,10 @@ class Batches:
                 for j in range(views.shape[1]):
                     if (self.check_view(views[i,j,:,:])):
                         continue
-                    array_list.append(self.resize(self.convert(views[i,j,:,:])))
+                    result = self.resize(self.convert(views[i,j,:,:]))
+                    if not self.check_json(result, self.list_comb):
+                        continue
+                    array_list.append(result)
                     array_locs.append((i,j))
             batch[self.name_conventer(element)] = array_list
             batch[self.name_conventer(element) + '_loc'] = array_locs
@@ -79,7 +83,12 @@ class Batches:
         if np.any(np.isnan(view[:,:])):
             bol=True
         return bol
-
+    
+    def check_json(self, array, list_comb):
+        """
+        Do nothing for SAR and AMSR
+        """
+        return True
 
 class SarBatches(Batches):
     def __init__(self,archive_):
@@ -88,6 +97,7 @@ class SarBatches(Batches):
         self.window = archive_.window_sar
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
+        self.list_comb = archive_.list_comb
 
     def resize(self, batches_array):
         """This function averages the values of pixel of 'batches_array' with the windows of
@@ -118,6 +128,7 @@ class OutputBatches(SarBatches):
         self.window = archive_.window_sar
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
+        self.list_comb = archive_.list_comb
 
     def name_conventer(self, name):
         return 'ice_type'
@@ -149,7 +160,39 @@ class OutputBatches(SarBatches):
         if(np.amax(view[:,:]) != np.amin(view[:,:])):
             bol=True
         return bol
+    
+    def check_json (self, array, list_combi):
+        """
+        Allows to know if the combinations of the batch are in the list of the combinations of the json
 
+        Parameters
+        ----------
+        param_vecteur : array
+            array with the parameters of the batch [ct,ca,sa,fa,cb,sb,fb,cc,sc,fc]
+        list_combi_work : list
+            list of all combination that we use to do the preprocessing (obtained from json file).
+
+        Returns
+        -------
+        result : boolean
+            if there are combinations in the list of all combinations 
+        """
+
+        bol = False
+        vect=[0, 0, 0]
+        for ice in range(3): # in a output there are 3 data for the 3 most present ice
+            if array[1+ice*3]==(-9): 
+                continue
+            if array[2+ice*3]==(-9): 
+                continue
+            if array[3+ice*3]==(-9): 
+                continue
+            combi = str(int(array[2+ice*3])) + '_' + str(int(array[3+ice*3]))
+            if combi in list_combi :
+                vect[ice]=1
+        if sum(vect) == 3:
+            bol = True
+        return bol
 
 class DistanceBatches(Batches):
     def __init__(self, archive_):
@@ -160,17 +203,23 @@ class DistanceBatches(Batches):
         self.window = archive_.window_sar
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
+        self.list_comb = archive_.list_comb
 
     def get_array(self, fil, name):
         """
         create the distance matrix between the pixels and the borders of the icechart polygons 
         """
         poly=fil[name][:].astype(self.astype).filled(np.nan)
+        orig_shape = poly.shape
+        poly = poly[::10, ::10]
+        new_shape = poly.shape
+        factor = np.array(orig_shape) / np.array(new_shape)
         list_poly=np.unique(poly)
         distance=distance_transform_edt(poly==list_poly[0], return_distances=True, return_indices=False)
         for id_poly in list_poly[1:] :
             distance1=distance_transform_edt(poly==id_poly, return_distances=True, return_indices=False)
             distance[distance == 0] = distance1[distance == 0]
+        distance = zoom(distance, factor, order=1)
         return distance
 
     def name_for_getdata(self, name):
@@ -180,7 +229,7 @@ class DistanceBatches(Batches):
         """
         return only the value of the distance for the middle pixel of the view
         """
-        n,p=array.shape
+        n, p = array.shape
         return array[n//2][p//2]
 
     def resize(self, array):
@@ -197,7 +246,9 @@ class DistanceBatches(Batches):
         if (view[:,:].size - np.count_nonzero(view[:,:])!=0):
             bol=True
         return bol
-
+    
+    def check_json (self, array, list_comb):
+        return (array[0] > 12.8)
 
 class Amsr2Batches(Batches):
     def __init__(self, archive_):
@@ -207,6 +258,7 @@ class Amsr2Batches(Batches):
         self.window = archive_.window_amsr2
         self.stride = archive_.stride_amsr2
         self.resample_step = archive_.resample_step_amsr2
+        self.list_comb = archive_.list_comb
 
     def name_conventer(self, name):
         return name.replace(".", "_")
@@ -233,6 +285,7 @@ class Archive():
     rm_swath            : int
     distance_threshold  : int
     encoding            : str
+
 
     def get_unprocessed_files(self):
         """
@@ -311,7 +364,7 @@ class Archive():
             x = fil[name][:].filled(np.nan)
             rgi = RegularGridInterpolator((line, sample), x, bounds_error=False, fill_value=None)
             self.amsr2_data[name] = rgi((line_grid, sample_grid))
-
+            
     def write_batches(self):
         """
         This function writes specific slice of desired variable names (that has been stored
@@ -321,7 +374,6 @@ class Archive():
         inp_var_names = [x for x in self.batches.keys() if not x.endswith('_loc')]
         out_var_names = [x.replace('.', '_') for x in inp_var_names]
         loc_names = [x for x in self.batches.keys() if x.endswith('_loc')]
-
         for i, loc in enumerate(self.batches[loc_names[0]]):
             # check that current loc is present in all locs
             loc_exists = True
@@ -332,21 +384,25 @@ class Archive():
             # skip if loc is not present in all
             if not loc_exists:
                 continue
-            data = {}
+            data = {}      
             for iname, oname, lname in zip(inp_var_names, out_var_names, loc_names):
                 j = self.batches[lname].index(loc)
                 data[oname] = self.batches[iname][j]
             opath = os.path.join(self.output_dir, self.scene)
-            ofilename = f'{opath}_{i:0>6}.npz'
+            os.makedirs(opath, exist_ok=True)
+            ofilename = f'{opath}/{i:0>6}.npz'
             np.savez(ofilename, **data)
+
+            
 
     def process_dataset(self, fil, filename):
         t0 = time.time()
         if self.check_file_healthiness(fil, filename):
             self.read_icechart_coding(fil, filename)
-#             self.resample_amsr2(fil)
-#             for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
-            for cls_ in [OutputBatches, DistanceBatches]:
+            self.resample_amsr2(fil)
+            with open(f'{self.input_dir}/vector_combinations.json') as fichier_json:
+                self.list_comb = json.load(fichier_json)['all_work_comb']
+            for cls_ in [SarBatches, OutputBatches, DistanceBatches, Amsr2Batches]:
                 obj = cls_(self)
                 batch = obj.make_batch(fil)
                 self.batches.update(batch)
