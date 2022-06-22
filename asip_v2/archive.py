@@ -28,7 +28,7 @@ class Batches:
         if len(array.shape)==3:
             window_size += (array.shape[2],)
             stride = (self.stride, self.stride, 1)
-        return view_as_windows(array, window_size, stride)
+        return view_as_windows(array, window_size, stride)[1:-1,1:-1,:]
 
     def name_conventer(self, name):
         return name
@@ -60,8 +60,8 @@ class Batches:
                 for j in range(views.shape[1]):
                     if (self.check_view(views[i,j,:,:])):
                         continue
-                    result = self.resize(self.convert(views[i,j,:,:]))
-                    if not self.check_json(result, self.list_comb):
+                    result = self.resize(self.convert(views[i,j,:]))
+                    if not self.check_result(result):
                         continue
                     array_list.append(result)
                     array_locs.append((i,j))
@@ -84,9 +84,9 @@ class Batches:
             bol=True
         return bol
     
-    def check_json(self, array, list_comb):
+    def check_result(self, array):
         """
-        Do nothing for SAR and AMSR
+        Do nothing for SAR and AMSR2
         """
         return True
 
@@ -111,13 +111,26 @@ class SarBatches(Batches):
         if self.step != 1:
             batches_array = uniform_filter(
                                             batches_array,
-                                            size=(self.step,self.step),
-                                            origin=(-(self.step//2),-(self.step//2))
+                                            size=(self.step, self.step, 1),
+                                            origin=(-(self.step//2),-(self.step//2), 0)
                                             )
-            batches_array = super().resize(batches_array)
+            batches_array = batches_array[::self.step, ::self.step, :]
+
         return batches_array
-
-
+    
+    def view_as_windows(self, array):
+        window_size = (self.window *2, self.window*2)
+        stride = self.stride
+        if len(array.shape) == 3:
+            window_size += (array.shape[2],)
+            stride = (self.stride, self.stride, 1)
+        view_l = view_as_windows(array, window_size, stride)
+        c = self.window//2
+        view_s1 = view_l[:,:, c:-c,c:-c]
+        view_s2 = view_l[:,:,::2,::2]
+        return np.stack((view_s1, view_s2), axis=4)
+    
+    
 class OutputBatches(SarBatches):
     def __init__(self, archive_):
         super().__init__(archive_)
@@ -143,7 +156,7 @@ class OutputBatches(SarBatches):
         return only one vector because all pixels in the view are in the same segment so the same information
         """
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            if id_value==array[0][0]:
+            if id_value == array[0][0][0]:
                 result=variable_belong_to_id
         return result
 
@@ -161,7 +174,7 @@ class OutputBatches(SarBatches):
             bol=True
         return bol
     
-    def check_json (self, array, list_combi):
+    def check_result (self, array):
         """
         Allows to know if the combinations of the batch are in the list of the combinations of the json
 
@@ -169,8 +182,6 @@ class OutputBatches(SarBatches):
         ----------
         param_vecteur : array
             array with the parameters of the batch [ct,ca,sa,fa,cb,sb,fb,cc,sc,fc]
-        list_combi_work : list
-            list of all combination that we use to do the preprocessing (obtained from json file).
 
         Returns
         -------
@@ -181,15 +192,16 @@ class OutputBatches(SarBatches):
         bol = False
         vect=[0, 0, 0]
         for ice in range(3): # in a output there are 3 data for the 3 most present ice
-            if array[1+ice*3]==(-9): 
+            if array[1+ice*3] == (-9): 
+                vect[ice] = 1
                 continue
-            if array[2+ice*3]==(-9): 
+            if array[2+ice*3] == (-9): 
                 continue
-            if array[3+ice*3]==(-9): 
+            if array[3+ice*3] == (-9): 
                 continue
             combi = str(int(array[2+ice*3])) + '_' + str(int(array[3+ice*3]))
-            if combi in list_combi :
-                vect[ice]=1
+            if combi in self.list_comb :
+                vect[ice] = 1
         if sum(vect) == 3:
             bol = True
         return bol
@@ -204,6 +216,7 @@ class DistanceBatches(Batches):
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
         self.list_comb = archive_.list_comb
+        self.distance_threshold = archive_.distance_threshold
 
     def get_array(self, fil, name):
         """
@@ -219,7 +232,7 @@ class DistanceBatches(Batches):
         for id_poly in list_poly[1:] :
             distance1=distance_transform_edt(poly==id_poly, return_distances=True, return_indices=False)
             distance[distance == 0] = distance1[distance == 0]
-        distance = zoom(distance, factor, order=1)
+        distance = zoom(distance, factor, order=1)*10
         return distance
 
     def name_for_getdata(self, name):
@@ -247,8 +260,8 @@ class DistanceBatches(Batches):
             bol=True
         return bol
     
-    def check_json (self, array, list_comb):
-        return (array[0] > 12.8)
+    def check_result (self, array):
+        return (array[0] > self.distance_threshold)
 
 class Amsr2Batches(Batches):
     def __init__(self, archive_):
@@ -285,6 +298,7 @@ class Archive():
     rm_swath            : int
     distance_threshold  : int
     encoding            : str
+    
 
 
     def get_unprocessed_files(self):

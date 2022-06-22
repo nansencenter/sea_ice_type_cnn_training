@@ -94,7 +94,7 @@ class BatchesTestCases(unittest.TestCase):
                        [20, 21, 22, 23, 24]])
         np.testing.assert_equal(test_batch.check_view(array), True)
 
-    def test_function_check_json(self):
+    def test_function_check_result(self):
         """return true for sar and amsr2"""
         test_batch = Batches()
         array=np.array([[ 0,  1,  2,  3,  4],
@@ -103,7 +103,7 @@ class BatchesTestCases(unittest.TestCase):
                        [15, 16, 17, 18, 19],
                        [20, 21, 22, 23, 24]])
         list_comb = [1,2]
-        np.testing.assert_equal(test_batch.check_json(array, list_comb),True)
+        np.testing.assert_equal(test_batch.check_result(array, list_comb),True)
 
 
 
@@ -121,14 +121,22 @@ class SarBatchesTestCases(unittest.TestCase):
         # for dividable case
         np.testing.assert_equal(test_batch.resize(array), np.array([[1, 2], [3, 4]]))
         test_batch.step = 2
-        array = np.arange(25).reshape(5, 5)
+        array = np.arange(50).reshape(5, 5, 2)
         #array=np.array([[ 0,  1,  2,  3,  4],
         #                [ 5,  6,  7,  8,  9],
         #                [10, 11, 12, 13, 14],
         #                [15, 16, 17, 18, 19],
         #                [20, 21, 22, 23, 24]])
         # for non-dividable case
-        np.testing.assert_equal(test_batch.resize(array), np.array([[2, 4], [12, 14]]))
+        np.testing.assert_equal(test_batch.resize(array), np.array([[[ 6,  7],
+                                                                    [10, 11],
+                                                                    [13, 14]],
+                                                                    [[26, 27],
+                                                                    [30, 31],
+                                                                    [33, 34]],
+                                                                    [[41, 42],
+                                                                    [45, 46],
+                                                                    [48, 49]]]))
 
 
 
@@ -154,7 +162,7 @@ class OutputBatchesTestCases(unittest.TestCase):
         test_batch = OutputBatches(archive_=mock_archive)
         test_batch.map_id_to_variable_values={33: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', 'I'],
                                               35: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I']}
-        array = np.ones((5,5))*35
+        array = np.ones((5,5,2))*35
         np.testing.assert_equal(test_batch.convert(array), ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I'])
 
     @mock.patch('utility.Archive.__init__', return_value=None)
@@ -184,14 +192,16 @@ class OutputBatchesTestCases(unittest.TestCase):
         np.testing.assert_equal(test_batch.check_view(array), False)
 
     @mock.patch('utility.Archive.__init__', return_value=None)
-    def test_function_check_json(self, mock_archive):
+    def test_function_check_result(self, mock_archive):
         """return """
         test_batch = OutputBatches(archive_=mock_archive)
         vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
         test = [90, 50, 83, 5, 30, 87, 6, 10, 93, 6]
-        np.testing.assert_equal(test_batch.check_json(test, vector_combination), True)
+        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
         test = [90, 50, 81, 7, 30, 87, 6, 10, 93, 6]
-        np.testing.assert_equal(test_batch.check_json(test, vector_combination), False)
+        np.testing.assert_equal(test_batch.check_result(test, vector_combination), False)
+        test = [60, 50, 83, 5, 10, 87, 6, -9, -9, -9]
+        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
 
 
 
@@ -263,15 +273,15 @@ class DistanceBatchesTestCases(unittest.TestCase):
         array=np.ones((5,5))
         np.testing.assert_equal(test_batch.check_view(array), False)
 
-        @mock.patch('utility.Archive.__init__', return_value=None)
-        def test_function_check_json(self, mock_archive):
-            """return """
-            test_batch = DistanceBatches(archive_=mock_archive)
-            vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
-            test = [0.25]
-            np.testing.assert_equal(test_batch.check_json(test, vector_combination), False)
-            test = [50.25]
-            np.testing.assert_equal(test_batch.check_json(test, vector_combination), True)
+    @mock.patch('utility.Archive.__init__', return_value=None)
+    def test_function_check_result(self, mock_archive):
+        """return """
+        test_batch = DistanceBatches(archive_=mock_archive)
+        vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
+        test = [0.25]
+        np.testing.assert_equal(test_batch.check_result(test, vector_combination), False)
+        test = [50.25]
+        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
 
 class Amsr2BatchesTestCases(unittest.TestCase):
     """tests for Amsr2Batches class"""
