@@ -103,7 +103,7 @@ class BatchesTestCases(unittest.TestCase):
                        [15, 16, 17, 18, 19],
                        [20, 21, 22, 23, 24]])
         list_comb = [1,2]
-        np.testing.assert_equal(test_batch.check_result(array, list_comb),True)
+        np.testing.assert_equal(test_batch.check_result(array),True)
 
 
 
@@ -195,13 +195,13 @@ class OutputBatchesTestCases(unittest.TestCase):
     def test_function_check_result(self, mock_archive):
         """return """
         test_batch = OutputBatches(archive_=mock_archive)
-        vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
+        test_batch.list_comb = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
         test = [90, 50, 83, 5, 30, 87, 6, 10, 93, 6]
-        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
+        np.testing.assert_equal(test_batch.check_result(test), True)
         test = [90, 50, 81, 7, 30, 87, 6, 10, 93, 6]
-        np.testing.assert_equal(test_batch.check_result(test, vector_combination), False)
+        np.testing.assert_equal(test_batch.check_result(test), False)
         test = [60, 50, 83, 5, 10, 87, 6, -9, -9, -9]
-        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
+        np.testing.assert_equal(test_batch.check_result(test), True)
 
 
 
@@ -227,7 +227,7 @@ class DistanceBatchesTestCases(unittest.TestCase):
                        [1,1,1,1,1],
                        [1,1,1,1,1],
                        [1,1,1,1,1],
-                       [1,1,1,1,1]])
+                       [1,1,1,1,1]])*10
 
         np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis1)
 
@@ -278,10 +278,11 @@ class DistanceBatchesTestCases(unittest.TestCase):
         """return """
         test_batch = DistanceBatches(archive_=mock_archive)
         vector_combination = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
-        test = [0.25]
-        np.testing.assert_equal(test_batch.check_result(test, vector_combination), False)
-        test = [50.25]
-        np.testing.assert_equal(test_batch.check_result(test, vector_combination), True)
+        test_batch.distance_threshold = 100
+        test = [20.5]
+        np.testing.assert_equal(test_batch.check_result(test), False)
+        test = [502.5]
+        np.testing.assert_equal(test_batch.check_result(test), True)
 
 class Amsr2BatchesTestCases(unittest.TestCase):
     """tests for Amsr2Batches class"""
