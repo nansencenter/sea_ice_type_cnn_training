@@ -192,9 +192,10 @@ class OutputBatches(SarBatches):
         bol = False
         vect=[0, 0, 0]
         for ice in range(3): # in a output there are 3 data for the 3 most present ice
-            if array[1+ice*3] == (-9): 
+            if array[1+ice*3] == (-9): # if (array[1+ice*3] == (-9)) and (array[0] <= 10 ):
                 vect[ice] = 1
                 continue
+#             else : continue
             if array[2+ice*3] == (-9): 
                 continue
             if array[3+ice*3] == (-9): 

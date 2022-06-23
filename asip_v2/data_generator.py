@@ -6,7 +6,7 @@ from one_hot_encoding_function import one_hot_continous_sod_f, one_hot_continous
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs,shuffle_on_epoch_end, batch_size, dims_input, dims_amsr2, idir_json,
+    def __init__(self, list_IDs, shuffle_on_epoch_end, batch_size, dims_input, dims_amsr2, idir_json,
      output_var_name, input_var_names, amsr2_var_names, encoding, prop=None):
         self.dims_input = dims_input
         self.dims_amsr2 = dims_amsr2
@@ -61,40 +61,10 @@ class DataGenerator(keras.utils.Sequence):
         """
         raise NotImplementedError('The one_hot_continous() method was not implemented')
 
-class DataGeneratorFrom_npz_File(DataGenerator):
-
-    
-    def data_generation(self):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim)
-        
-        one_hot_func = {
-                'hugo': one_hot_continous_hugo,
-                'sod_f': one_hot_continous_sod_f
-            }[self.encoding]
-        
-        self.dims_output ={
-                'hugo' : np.array([0,0,0,0]).shape,
-                'sod_f' : np.array(self.list_combi).shape
-        }[self.encoding]
-        
-        self.x_y_z_initialization()
-        
-        # Generate data
-        for i, ID in enumerate(self.list_IDs_temp):
-            vector_param = np.load(ID).get(self.output_var_name)
-#             output = self.one_hot_continous(vector_param)
-            output = one_hot_func(vector_param, self.list_combi)
-            self.y[i,:] = output
-            for j, sar_name in enumerate(self.input_var_names):
-                self.X[i,:,:,j] = np.load(ID).get(sar_name)
-            for j, amsr2_name in enumerate(self.amsr2_var_names):
-                self.z[i,:,:,j] = np.load(ID).get(amsr2_name)
-
-                
-                
-                
-                
 class HugoDataGenerator(DataGenerator):
+    def __init__(self, list_IDs, **kwargs):
+        super().__init__(list_IDs, **kwargs)
+        self.dims_output = np.array([0,0,0,0]).shape
     
     def ice_type(self, stage):
         """
@@ -151,15 +121,78 @@ class HugoDataGenerator(DataGenerator):
                 continue
             if vector_param[2+ice*3]==(-9): 
                 continue
-            icetype = ice_type(vector_param[2+ice*3])
-            result[icetype] += vector_param[1+ice*3]/100
+            icetype = self.ice_type(vector_param[2+ice*3])
+            result[icetype] += round(vector_param[1+ice*3]/100,1)
         if max(result) == 0:
              result[0] = 1
         else:
              result[0] = 1-sum(result[1:])
+        for i in range(len(result)):
+            result[i] = round(result[i],1)
         return result
+
     
+class DataGenerator_sod_f(DataGenerator):
+    def __init__(self, list_IDs, **kwargs):
+        super().__init__(list_IDs, **kwargs)
+        self.dims_output = np.array(self.list_combi).shape
     
+    def one_hot_continous(self, vector_param):
+        """
+        Converts the output parameter vector ([ct,ca,sa,fa,...]) 
+        into a vector that contains the concentration percentages for the combinations.
+
+        Parameters
+        ----------
+        vector_param : list
+            all parameters in a vector.
+
+        Returns
+        -------
+        result : list
+            List of percentage concentrations for each work combination.
+        """
+
+        result = [0]*len(self.list_combi)
+        vector_param = vector_param.squeeze()
+        if vector_param[0] <=10 : #open weter
+            combi = "0_0"
+            index_combi = self.list_combi.index(combi)
+            result[index_combi] = 1
+        for ice in range(3): # in a output there are 3 data for the 3 most present ice
+            if vector_param[1+ice*3] == (-9): 
+                continue
+            if vector_param[2+ice*3] == (-9): 
+                continue
+            if vector_param[3+ice*3] == (-9): 
+                continue
+            combi = str(int(vector_param[2+ice*3])) + '_' + str(int(vector_param[3+ice*3]))
+            index_combi = self.list_combi.index(combi)
+            result[index_combi] += vector_param[1+ice*3]/100
+        if sum(result) != 1:
+            result[0] = 1-sum(result)
+        for i in range(len(result)):
+            result[i] = round(result[i],1)
+        return result
+        
+class DataGeneratorFrom_npz_File(HugoDataGenerator):
+        
+    def data_generation(self):
+        'Generates data containing batch_size samples' # X : (n_samples, *dim)
+        
+        self.x_y_z_initialization()
+        
+        # Generate data
+        for i, ID in enumerate(self.list_IDs_temp):
+            vector_param = np.load(ID).get(self.output_var_name)
+#             print(vector_param)
+            output = self.one_hot_continous(vector_param)
+            self.y[i,:] = output
+            for j, sar_name in enumerate(self.input_var_names):
+                self.X[i,:,:,j] = np.load(ID).get(sar_name)
+            for j, amsr2_name in enumerate(self.amsr2_var_names):
+                self.z[i,:,:,j] = np.load(ID).get(amsr2_name)
+
 
 class DataGeneratorFromMemory(DataGenerator):
     def __init__(self,list_IDs,**kwargs):

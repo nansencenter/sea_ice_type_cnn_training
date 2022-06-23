@@ -195,14 +195,15 @@ class OutputBatchesTestCases(unittest.TestCase):
     def test_function_check_result(self, mock_archive):
         """return """
         test_batch = OutputBatches(archive_=mock_archive)
-        test_batch.list_comb = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
+        test_batch.list_comb = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5', '91_8']
         test = [90, 50, 83, 5, 30, 87, 6, 10, 93, 6]
         np.testing.assert_equal(test_batch.check_result(test), True)
         test = [90, 50, 81, 7, 30, 87, 6, 10, 93, 6]
         np.testing.assert_equal(test_batch.check_result(test), False)
         test = [60, 50, 83, 5, 10, 87, 6, -9, -9, -9]
         np.testing.assert_equal(test_batch.check_result(test), True)
-
+#         test = [92, -9, 91,  8, -9, -9, -9, -9, -9, -9]
+#         np.testing.assert_equal(test_batch.check_result(test), False)
 
 
 class DistanceBatchesTestCases(unittest.TestCase):

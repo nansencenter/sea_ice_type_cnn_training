@@ -6,10 +6,6 @@ import shutil
 import numpy as np
 
 
-# idir = '/tf/data/output'
-# idir_w_keep = '/tf/data/output/output_keep_w'
-# idir_w_out = '/tf/data/output/output_out_w'
-
 idir = '/Data/preprocessing/output'
 idir_w_keep = '/Data/preprocessing/output/output_keep_w'
 idir_w_out = '/Data/preprocessing/output/output_out_w'
@@ -32,15 +28,15 @@ for nc in all_nc :
             prob = rd.random()
             # we keep only 20 % of water batches
             if prob < 0.2 :
-                keep+=1
+                keep += 1
                 os.makedirs(f'{idir_w_keep}/{name}', exist_ok=True)
                 shutil.copyfile(npz, f'{idir_w_keep}/{name}/{npz[-10:]}')
             else:
-                out+=1
+                out += 1
                 os.makedirs(f'{idir_w_out}/{name}', exist_ok=True)
                 shutil.copyfile(npz, f'{idir_w_out}/{name}/{npz[-10:]}')
         else:
-            keep+=1
+            keep += 1
             os.makedirs(f'{idir_w_keep}/{name}', exist_ok=True)
             shutil.copyfile(npz, f'{idir_w_keep}/{name}/{npz[-10:]}')
 print(sum_)
