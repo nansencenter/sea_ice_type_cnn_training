@@ -6,7 +6,7 @@ import numpy as np
 from archive import Amsr2Batches, Archive, Batches, OutputBatches, DistanceBatches, SarBatches
 
 from skimage.util.shape import view_as_windows
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, zoom
 
 
 
@@ -195,15 +195,21 @@ class OutputBatchesTestCases(unittest.TestCase):
     def test_function_check_result(self, mock_archive):
         """return """
         test_batch = OutputBatches(archive_=mock_archive)
-        test_batch.list_comb = ['83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5', '91_8']
+        test_batch.list_comb = ['0_0', '83_5', '93_6', '87_6', '95_4', '95_6', '91_5', '95_3', '95_5']
         test = [90, 50, 83, 5, 30, 87, 6, 10, 93, 6]
         np.testing.assert_equal(test_batch.check_result(test), True)
         test = [90, 50, 81, 7, 30, 87, 6, 10, 93, 6]
         np.testing.assert_equal(test_batch.check_result(test), False)
         test = [60, 50, 83, 5, 10, 87, 6, -9, -9, -9]
         np.testing.assert_equal(test_batch.check_result(test), True)
-#         test = [92, -9, 91,  8, -9, -9, -9, -9, -9, -9]
-#         np.testing.assert_equal(test_batch.check_result(test), False)
+        test = [2, -9, -9, -9, -9, -9, -9, -9, -9, -9]
+        np.testing.assert_equal(test_batch.check_result(test), True)
+        test = [92, -9, 91,  8, -9, -9, -9, -9, -9, -9]
+        np.testing.assert_equal(test_batch.check_result(test), False)
+        test = [92, -9, 93,  6, -9, -9, -9, -9, -9, -9]
+        np.testing.assert_equal(test_batch.check_result(test), True)
+        test = [60, 50, 93,  6, 10, 87, -9, -9, -9, -9]
+        np.testing.assert_equal(test_batch.check_result(test), False)
 
 
 class DistanceBatchesTestCases(unittest.TestCase):
@@ -214,23 +220,18 @@ class DistanceBatchesTestCases(unittest.TestCase):
         """get_array function shall be called correctly"""
         test_batch = DistanceBatches(archive_=mock_archive)
         test_batch.astype=np.float32
-        fil = {"polygon_icechart": np.ma.masked_array(np.array([[0,0,0,1,1],
-                                                                [0,0,1,1,1],
-                                                                [0,1,1,1,1],
-                                                                [1,1,1,1,1],
-                                                                [1,1,1,1,1]])),
-                "polygon_code": None}
-        array=fil["polygon_icechart"][:]
-        # dis0 = distance_transform_edt(array==0,return_distances=True, return_indices=False)
-        # dis1 = distance_transform_edt(array==1,return_distances=True, return_indices=False)
-        # dis0[dis0 == 0] = dis1[dis0 == 0]
-        dis1=np.array([[1,1,1,1,1],
-                       [1,1,1,1,1],
-                       [1,1,1,1,1],
-                       [1,1,1,1,1],
-                       [1,1,1,1,1]])*10
-
-        np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis1)
+        test_batch.list_poly = [1,2]
+        test1 = np.zeros((100,100))
+        test1[:20,:20]=1
+        test1[50:]=2
+        fil = {"polygon_icechart": np.ma.masked_array(test1),
+                "polygon_code":[1,2]}
+        array=fil["polygon_icechart"][::10,::10]
+        dis0 = distance_transform_edt(array==1,return_distances=True, return_indices=False)
+        dis1 = distance_transform_edt(array==2,return_distances=True, return_indices=False)
+        dis0[dis0 == 0] = dis1[dis0 == 0]
+        dis0 =zoom(dis0,10,order=1)*10
+        np.testing.assert_equal(test_batch.get_array(fil,"polygon_icechart"),dis0)
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_name_for_getdata(self, mock_archive):

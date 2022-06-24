@@ -6,12 +6,12 @@ import shutil
 import numpy as np
 
 
-idir = '/Data/preprocessing/output'
-idir_w_keep = '/Data/preprocessing/output/output_keep_w'
-idir_w_out = '/Data/preprocessing/output/output_out_w'
+idir = '/Data/preprocessing4hugo/output'
+idir_w_out = '/Data/preprocessing4hugo/output/output_out_w'
+water_threshold =0.2
 
-os.makedirs(idir_w_keep, exist_ok=True)
 os.makedirs(idir_w_out, exist_ok=True)
+
 
 with open(f'{idir}/processed_files.json') as fichier_json:
     all_nc = json.load(fichier_json)
@@ -27,18 +27,12 @@ for nc in all_nc :
         if vector_param[0] == 2 : #it is water
             prob = rd.random()
             # we keep only 20 % of water batches
-            if prob < 0.2 :
-                keep += 1
-                os.makedirs(f'{idir_w_keep}/{name}', exist_ok=True)
-                shutil.copyfile(npz, f'{idir_w_keep}/{name}/{npz[-10:]}')
-            else:
+            if prob >= water_threshold :
                 out += 1
                 os.makedirs(f'{idir_w_out}/{name}', exist_ok=True)
-                shutil.copyfile(npz, f'{idir_w_out}/{name}/{npz[-10:]}')
-        else:
-            keep += 1
-            os.makedirs(f'{idir_w_keep}/{name}', exist_ok=True)
-            shutil.copyfile(npz, f'{idir_w_keep}/{name}/{npz[-10:]}')
+                shutil.move(npz, f'{idir_w_out}/{name}/{npz[-10:]}')
+            else:
+                keep += 1
 print(sum_)
 print(out)
 print(keep)

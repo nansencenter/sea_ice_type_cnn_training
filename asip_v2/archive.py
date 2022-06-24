@@ -192,13 +192,8 @@ class OutputBatches(SarBatches):
         bol = False
         vect=[0, 0, 0]
         for ice in range(3): # in a output there are 3 data for the 3 most present ice
-            if array[1+ice*3] == (-9): # if (array[1+ice*3] == (-9)) and (array[0] <= 10 ):
+            if array[1+ice*3] == (-9) and array[2+ice*3] == (-9) and array[3+ice*3] == (-9):
                 vect[ice] = 1
-                continue
-#             else : continue
-            if array[2+ice*3] == (-9): 
-                continue
-            if array[3+ice*3] == (-9): 
                 continue
             combi = str(int(array[2+ice*3])) + '_' + str(int(array[3+ice*3]))
             if combi in self.list_comb :
@@ -211,6 +206,7 @@ class DistanceBatches(Batches):
     def __init__(self, archive_):
         self.map_id_to_variable_values = archive_.map_id_to_variable_values
         self.names_polygon_codes = archive_.names_polygon_codes
+        self.list_poly = list(archive_.map_id_to_variable_values.keys())
         self.loop_list = [0]
         self.astype = np.float16
         self.window = archive_.window_sar
@@ -228,9 +224,8 @@ class DistanceBatches(Batches):
         poly = poly[::10, ::10]
         new_shape = poly.shape
         factor = np.array(orig_shape) / np.array(new_shape)
-        list_poly=np.unique(poly)
-        distance=distance_transform_edt(poly==list_poly[0], return_distances=True, return_indices=False)
-        for id_poly in list_poly[1:] :
+        distance = distance_transform_edt(poly == self.list_poly[0], return_distances=True, return_indices=False)
+        for id_poly in self.list_poly[1:] :
             distance1=distance_transform_edt(poly==id_poly, return_distances=True, return_indices=False)
             distance[distance == 0] = distance1[distance == 0]
         distance = zoom(distance, factor, order=1)*10
