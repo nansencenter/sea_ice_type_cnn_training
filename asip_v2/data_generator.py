@@ -216,10 +216,8 @@ class DataGenerator_sod_f(DataGenerator):
         self.x_y_z_initialization()
         
         # Generate data
-        print(self.list_combi)
         for i, ID in enumerate(self.list_IDs_temp):
             vector_param = np.load(ID).get(self.output_var_name)
-            print(vector_param)
             output = self.one_hot_continous(vector_param)
             self.y[i,:] = output
             for j, sar_name in enumerate(self.input_var_names):

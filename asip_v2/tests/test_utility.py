@@ -16,49 +16,25 @@ class UtilityFunctionsTestCases(unittest.TestCase):
 
     def test_common_parser_and_postprocess_the_args(self):
         """ common parser shall correctly set the 'dict_for_archive_init' """
-        sys.argv = ['', "dir_name", "output", '-n', 'nersc_sar', '-w', '700', '-s', '700', '-r', '50']
+        sys.argv = ['', "dir_name", "output", '-n', 'nersc_sar', '-w', '700', '-s', '700', '-r', '50', '-d', '100']
         parser = common_parser()
         arg = parser.parse_args()
         dict_for_archive_init = postprocess_the_args(arg)
         self.assertEqual(dict_for_archive_init,
-            {'sar_names': ['nersc_sar_primary', 'nersc_sar_secondary'],
-            'nersc': 'nersc_sar',
-            'datapath': "dir_name",
-            'window_size': (700, 700),
-            'window_size_amsr2': (14, 14),
-            'stride_sar_size': 700,
-            'stride_ams2_size': 14,
-            'step_sar': 1,
-            'step_output': 1,
-            'aspect_ratio': 50,
-            'rm_swath': 0,
-            'amsr_labels': ['btemp_6.9h', 'btemp_6.9v', 'btemp_7.3h', 'btemp_7.3v', 'btemp_10.7h',
-                           'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v', 'btemp_23.8h',
-                           'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v', 'btemp_89.0h', 'btemp_89.0v'],
-            'distance_threshold': 0}
+        {'input_dir': 'dir_name',
+        'output_dir': 'output',
+        'names_sar': ['nersc_sar_primary', 'nersc_sar_secondary'],
+        'names_amsr2': ['btemp_6.9h', 'btemp_6.9v', 'btemp_7.3h', 'btemp_7.3v', 'btemp_10.7h', 'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v', 'btemp_23.8h', 'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v', 'btemp_89.0h', 'btemp_89.0v'],
+        'window_sar': 700,
+        'window_amsr2': 16,
+        'stride_sar': 700,
+        'stride_amsr2': 16,
+        'resample_step_amsr2': 43,
+        'resize_step_sar': 50,
+        'rm_swath': 0,
+        'distance_threshold': 100,
+        'encoding': 'continous'}
         )
-
-    def test_postprocess_the_args_for_validation_window_size(self):
-        """Window size must be dividable to value of aspect_ratio"""
-        parser = common_parser()
-        sys.argv = ['', "dir_name", 'output', '-n', 'nersc_sar', '-w', '701', '-s', '700', '-r', '50']
-        arg = parser.parse_args()
-        with self.assertRaises(argparse.ArgumentTypeError) as cm:
-            postprocess_the_args(arg)
-        the_exception = cm.exception
-        self.assertEqual(*the_exception.args,
-                                      'Window size must be dividable to value of aspect_ratio = 50')
-
-    def test_postprocess_the_args_for_validation_stride(self):
-        """Stride must be dividable to value of aspect_ratio"""
-        parser = common_parser()
-        sys.argv = ['', "dir_name", '-n', 'nersc_sar', '-w', '700', '-s', '701', '-r', '50']
-        arg = parser.parse_args()
-        with self.assertRaises(argparse.ArgumentTypeError) as cm:
-            postprocess_the_args(arg)
-        the_exception = cm.exception
-        self.assertEqual(*the_exception.args,
-                                           'Stride must be dividable to value of aspect_ratio = 50')
 
     def test_function_between_zero_and_one_float_type(self):
         """
@@ -119,23 +95,20 @@ class ConfigureTestCases(unittest.TestCase):
     def test_function_set_params(self, mock_archive):
         """self.params must be set correctly for the class"""
         config_ = Configure(archive=mock_archive)
-        config_.dims_input = (700, 700)
-        config_.dims_output = (700, 700)
         config_.dims_amsr2 = (14, 14)
         config_.input_var_names = ["input_var_name1","input_var_name2"]
         config_.output_var_name = 'CT'
         config_.amsr2_var_names = ["amsr2_var_names1","amsr2_var_names2"]
         config_.batch_size = 10
         config_.shuffle_on_epoch_end = True
+        config_.idir_json ='/json'
         config_.set_params()
-        self.assertEqual(config_.params, {
-                                          'dims_input': (700, 700, 2),
-                                          'dims_output': (700, 700, 1),
-                                          'dims_amsr2': (14, 14, 2),
+        self.assertEqual(config_.params, {'dims_amsr2': (14, 14, 2),
                                           'output_var_name': 'CT',
                                           'input_var_names': ['input_var_name1', 'input_var_name2'],
                                           'amsr2_var_names': ['amsr2_var_names1', 'amsr2_var_names2'],
                                           'batch_size': 10,
+                                          'idir_json': '/json',
                                           'shuffle_on_epoch_end': True,
                                          }
                         )

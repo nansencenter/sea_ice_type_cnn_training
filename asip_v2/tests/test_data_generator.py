@@ -185,7 +185,6 @@ class DataGenerator_sod_fTest_case(unittest.TestCase):
         config_.set_params()
         self.test_generator2 = DataGenerator_sod_f(config_.partition['train'], **config_.params)
         self.test_generator2.dims_input = (1, 1, 2, 2)
-        # print(self.test_generator2[0])
         ans0, ans3 = self.test_generator2[0]
         ans1 = ans0[0]
         ans2= ans0[1]
