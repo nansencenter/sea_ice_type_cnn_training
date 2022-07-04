@@ -16,6 +16,26 @@ class UtilityFunctionsTestCases(unittest.TestCase):
 
     def test_common_parser_and_postprocess_the_args(self):
         """ common parser shall correctly set the 'dict_for_archive_init' """
+        sys.argv = ['', "dir_name", "output", '-n', 'nersc_sar', '-w', '700', '-s', '700', '-r', '50', '-d', '100', '-i']
+        parser = common_parser()
+        arg = parser.parse_args()
+        dict_for_archive_init = postprocess_the_args(arg)
+        self.assertEqual(dict_for_archive_init,
+        {'input_dir': 'dir_name',
+        'output_dir': 'output',
+        'names_sar': ['nersc_sar_primary', 'nersc_sar_secondary'],
+        'names_amsr2': ['btemp_6.9h', 'btemp_6.9v', 'btemp_7.3h', 'btemp_7.3v', 'btemp_10.7h', 'btemp_10.7v', 'btemp_18.7h', 'btemp_18.7v', 'btemp_23.8h', 'btemp_23.8v', 'btemp_36.5h', 'btemp_36.5v', 'btemp_89.0h', 'btemp_89.0v'],
+        'window_sar': 700,
+        'window_amsr2': 16,
+        'stride_sar': 700,
+        'stride_amsr2': 16,
+        'resample_step_amsr2': 43,
+        'resize_step_sar': 50,
+        'rm_swath': 0,
+        'distance_threshold': 100,
+        'encoding': 'continous',
+        'inference': True}
+        )
         sys.argv = ['', "dir_name", "output", '-n', 'nersc_sar', '-w', '700', '-s', '700', '-r', '50', '-d', '100']
         parser = common_parser()
         arg = parser.parse_args()
@@ -33,8 +53,11 @@ class UtilityFunctionsTestCases(unittest.TestCase):
         'resize_step_sar': 50,
         'rm_swath': 0,
         'distance_threshold': 100,
-        'encoding': 'continous'}
+        'encoding': 'continous',
+        'inference': False}
         )
+
+
 
     def test_function_between_zero_and_one_float_type(self):
         """

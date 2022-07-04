@@ -162,8 +162,13 @@ class OutputBatchesTestCases(unittest.TestCase):
         test_batch = OutputBatches(archive_=mock_archive)
         test_batch.map_id_to_variable_values={33: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', '-9', 'I'],
                                               35: ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I']}
-        array = np.ones((5,5,2))*35
-        np.testing.assert_equal(test_batch.convert(array), ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I'])
+        test_batch.inference = False
+        array1 = np.ones((5,5))*35
+        np.testing.assert_equal(test_batch.convert(array1), ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I'])
+        test_batch.inference = True
+        array2= np.ones((5,5))*35
+        array2[2:4]=33
+        np.testing.assert_equal(test_batch.convert(array2), ['92', '-9', '91', ' 8', '-9', '-9', '-9', '-9', '-9', '-9', '98', '-9', '-9', 'I'])
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_resize(self, mock_archive):
@@ -176,20 +181,23 @@ class OutputBatchesTestCases(unittest.TestCase):
     def test_function_check_view(self, mock_archive):
         """return boolean if there are  nan in the view or if there are not the same number"""
         test_batch = OutputBatches(archive_=mock_archive)
-        array=np.array([[ 0,  1,  2,  3,  4],
+        test_batch.inference = False
+        array0=np.array([[ 0,  1,  2,  3,  4],
                        [ 5,  6,  7,  8,  9],
                        [10, 11, 12, 13, 14],
                        [15, 16, 17, 18, 19],
                        [20, 21, 22, 23, 24]])
-        np.testing.assert_equal(test_batch.check_view(array), True)
-        array=np.array([[ np.nan,  1,  1,  1, 1],
+        np.testing.assert_equal(test_batch.check_view(array0), True)
+        array1=np.array([[ np.nan,  1,  1,  1, 1],
                        [1, 1, 1, 1, 1],
                        [1, 1, 1, 1, 1],
                        [1, 1, 1, 1, 1],
                        [1, 1, 1, 1, 1]])
-        np.testing.assert_equal(test_batch.check_view(array), True)
-        array=np.ones((5,5))
-        np.testing.assert_equal(test_batch.check_view(array), False)
+        np.testing.assert_equal(test_batch.check_view(array1), True)
+        array3=np.ones((5,5))
+        np.testing.assert_equal(test_batch.check_view(array3), False)
+        test_batch.inference = True
+        np.testing.assert_equal(test_batch.check_view(array0), False)
 
     @mock.patch('utility.Archive.__init__', return_value=None)
     def test_function_check_result(self, mock_archive):
@@ -337,7 +345,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 50,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         test_archive.OUTPATH = ""
         with mock.patch("os.listdir", return_value=["a.nc"]):
             test_archive.get_unprocessed_files()
@@ -360,7 +369,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 50,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         test_archive.processed_files = []
         test_archive.files = ["0.nc","1.nc","2.nc","3.nc"]
         test_archive.update_processed_files(1)
@@ -385,7 +395,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 0,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         # the first case of unhealthy file
         fil = mock.Mock(variables=[""])
         self.assertFalse(test_archive.check_file_healthiness(fil, "fake_name"))
@@ -408,7 +419,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 0,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         # the second case of unhealthy file
         fil = mock.Mock(variables=['polygon_icechart'])
         self.assertFalse(test_archive.check_file_healthiness(fil, "fake_name"))
@@ -431,7 +443,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 0,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         # the third case of unhealthy file
         fil = mock.Mock(variables=['polygon_icechart', 'btemp_6.9h'],
                         aoi_upperleft_sample=3,
@@ -459,7 +472,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 0,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         # file is healthy
         fil = mock.Mock(variables=['polygon_icechart', 'btemp_6.9h'],
                         aoi_upperleft_sample=3,
@@ -491,7 +505,8 @@ class ArchiveTestCases(unittest.TestCase):
                                 resize_step_sar = 10,
                                 rm_swath = 5,
                                 distance_threshold = 10,
-                                encoding = "one_hot_binary")
+                                encoding = "one_hot_binary",
+                                inference =False)
         test_archive.read_icechart_coding(fil, filename)
         self.assertEqual(test_archive.scene, '20180410T084537')
         self.assertEqual(test_archive.names_polygon_codes,
@@ -517,7 +532,8 @@ class ArchiveTestCases(unittest.TestCase):
                                resize_step_sar = 50,
                                rm_swath = 0,
                                distance_threshold = 50,
-                               encoding = "one_hot_binary")
+                               encoding = "one_hot_binary",
+                               inference =False)
         test_archive.scene = "20180410T084537"
         # test_archive.OUTPATH = "/etc"
         # test_archive.NERSC = "nersc_"
@@ -529,19 +545,19 @@ class ArchiveTestCases(unittest.TestCase):
         test_archive.batches = {'sar': [7, 8, 9],
                              'btemp_6_9h': [4, 5, 6],
                              'CT': [1, 2, 3],
-                             '_loc': [(11, 12), (13, 14), (15, 16)]}
+                             'ice_type_loc': [(11, 12), (13, 14), (15, 16)]}
         test_archive.write_batches()
         self.assertEqual(mock_savez.call_args_list[0],
                          mock.call('/etc/20180410T084537/000000.npz',
-                                   sar=7)
+                                   sar=7, loc=(11, 12))
                         )
         self.assertEqual(mock_savez.call_args_list[1],
                          mock.call('/etc/20180410T084537/000001.npz',
-                                   sar=8)
+                                   sar=8, loc=(13, 14))
                         )
         self.assertEqual(mock_savez.call_args_list[2],
                          mock.call('/etc/20180410T084537/000002.npz',
-                                   sar=9)
+                                   sar=9, loc=(15, 16))
                         )
 
 

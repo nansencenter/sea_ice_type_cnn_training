@@ -55,6 +55,9 @@ def common_parser():
     parser.add_argument(
         '-e','--encoding', required=False, type=str, default='continous', choices=["continous", "binary"],
         help="type of hot-encoding of ice chart data. binary - only 0 or 1. continuous - from 0 to 1.")
+    parser.add_argument(
+        '-i', '--inference',  required=False, default=False, action='store_true',
+        help="")
     return parser
 
 def postprocess_the_args(arg):
@@ -99,6 +102,7 @@ def postprocess_the_args(arg):
         rm_swath = arg.rm_swath,
         distance_threshold = arg.distance_threshold,
         encoding = arg.encoding,
+        inference = arg.inference
     )
     return dict_for_archive_init
 

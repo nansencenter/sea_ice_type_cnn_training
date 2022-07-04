@@ -9,6 +9,7 @@ from skimage.util.shape import view_as_windows
 from scipy.ndimage import uniform_filter
 from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage import distance_transform_edt, zoom
+from statistics import mode 
 
 
 class Batches:
@@ -61,8 +62,9 @@ class Batches:
                     if (self.check_view(views[i,j,:,:])):
                         continue
                     result = self.resize(self.convert(views[i,j,:]))
-                    if not self.check_result(result):
-                        continue
+                    if not self.inference :
+                        if not self.check_result(result):
+                            continue
                     array_list.append(result)
                     array_locs.append((i,j))
             batch[self.name_conventer(element)] = array_list
@@ -98,6 +100,7 @@ class SarBatches(Batches):
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
         self.list_comb = archive_.list_comb
+        self.inference = archive_.inference
 
     def resize(self, batches_array):
         """This function averages the values of pixel of 'batches_array' with the windows of
@@ -131,9 +134,8 @@ class SarBatches(Batches):
         return np.stack((view_s1, view_s2), axis=4)
     
     
-class OutputBatches(SarBatches):
+class OutputBatches(Batches):
     def __init__(self, archive_):
-        super().__init__(archive_)
         self.map_id_to_variable_values = archive_.map_id_to_variable_values
         self.names_polygon_codes = archive_.names_polygon_codes
         self.loop_list = [0]
@@ -142,6 +144,7 @@ class OutputBatches(SarBatches):
         self.stride = archive_.stride_sar
         self.step = archive_.resize_step_sar
         self.list_comb = archive_.list_comb
+        self.inference = archive_.inference
 
     def name_conventer(self, name):
         return 'ice_type'
@@ -155,8 +158,14 @@ class OutputBatches(SarBatches):
         of the very variable based on polygon ID values in each location in 2d array of values_array
         return only one vector because all pixels in the view are in the same segment so the same information
         """
+        if self.inference :
+            list_array =array.flatten()
+            id_poly = mode(list_array)
+#             numpy median
+        else :
+            id_poly = array[0][0]
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
-            if id_value == array[0][0][0]:
+            if id_value == id_poly :
                 result=variable_belong_to_id
         return result
 
@@ -167,9 +176,12 @@ class OutputBatches(SarBatches):
         """
         to know if there is a nan in the view and if there are several different segments in the view
         """
+        
         bol=False
         if np.any(np.isnan(view[:,:])):
             bol=True
+        if self.inference :
+            return bol
         if(np.amax(view[:,:]) != np.amin(view[:,:])):
             bol=True
         return bol
@@ -214,6 +226,7 @@ class DistanceBatches(Batches):
         self.step = archive_.resize_step_sar
         self.list_comb = archive_.list_comb
         self.distance_threshold = archive_.distance_threshold
+        self.inference = archive_.inference
 
     def get_array(self, fil, name):
         """
@@ -249,7 +262,7 @@ class DistanceBatches(Batches):
 
     def check_view(self,view):
         """
-        to know if there is a nan in the view
+        to know if there is a zero in the view of the distance matrix
         """
         bol=False
         if (view[:,:].size - np.count_nonzero(view[:,:])!=0):
@@ -268,6 +281,7 @@ class Amsr2Batches(Batches):
         self.stride = archive_.stride_amsr2
         self.resample_step = archive_.resample_step_amsr2
         self.list_comb = archive_.list_comb
+        self.inference = archive_.inference
 
     def name_conventer(self, name):
         return name.replace(".", "_")
@@ -294,6 +308,7 @@ class Archive():
     rm_swath            : int
     distance_threshold  : int
     encoding            : str
+    inference           : bool
     
 
 
@@ -398,6 +413,7 @@ class Archive():
             for iname, oname, lname in zip(inp_var_names, out_var_names, loc_names):
                 j = self.batches[lname].index(loc)
                 data[oname] = self.batches[iname][j]
+            data["loc"] = self.batches["ice_type_loc"][self.batches["ice_type_loc"].index(loc)]
             opath = os.path.join(self.output_dir, self.scene)
             os.makedirs(opath, exist_ok=True)
             ofilename = f'{opath}/{i:0>6}.npz'

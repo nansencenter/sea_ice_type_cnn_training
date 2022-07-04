@@ -34,10 +34,13 @@ class DataGenerator(keras.utils.Sequence):
         raise NotImplementedError('The data_generation() method was not implemented')
         
     def one_hot_continous(self, vector_param):
-        """
-        """
         raise NotImplementedError('The one_hot_continous() method was not implemented')
-
+        
+    def convert (self, array):
+        """
+        Do nothing forHugoDataGenerator and Datageneratorsod_f
+        """
+        return array
               
 class HugoDataGenerator(DataGenerator):
     def __init__(self, list_IDs, **kwargs):
@@ -71,7 +74,7 @@ class HugoDataGenerator(DataGenerator):
         if stage in range(87, 94):
             #print('First year ice')
             index_=2
-        if stage in range(95, 98):
+        if stage in range(95, 99):
             #print('multiyear ice')
             index_=3
         return index_
@@ -111,9 +114,9 @@ class HugoDataGenerator(DataGenerator):
             result[0] = 1-sum(result[1:])
         else:
             result[0] = 1-sum(result[1:])
+        result = self.convert(result)
         return np.round(result,1)
-    
-    
+        
     def __getitem__(self, index):
         'Generate one batch of data'
         
@@ -123,7 +126,7 @@ class HugoDataGenerator(DataGenerator):
         self.list_IDs_temp = [self.list_IDs[k] for k in indexes]
         # Generate data
         self.data_generation()
-        return [self.X], self.y
+        return self.X, self.y
     
     def x_y_z_initialization(self):
         # Initialization
@@ -142,7 +145,21 @@ class HugoDataGenerator(DataGenerator):
             for j, sar_name in enumerate(self.input_var_names):
                 self.X[i,:,:,j] = np.load(ID).get(sar_name)[:,:,0]
             
-            
+
+class HugoBinaryGenerator(HugoDataGenerator):
+    def __init__(self, list_IDs, **kwargs):
+        super().__init__(list_IDs, **kwargs)
+    
+    def convert (self, vector):
+        """
+        Convert the continous vector i binary vector
+        """
+        type_max = np.argmax(vector)
+        r = [0, 0, 0, 0]
+        r[type_max] =1
+        return r
+
+    
 class DataGenerator_sod_f(DataGenerator):
     def __init__(self, list_IDs, **kwargs):
         super().__init__(list_IDs, **kwargs)
@@ -189,6 +206,7 @@ class DataGenerator_sod_f(DataGenerator):
             result[0] = 1-sum(result[1:])
         else:
             result[0] = 1-sum(result[1:])
+        result = self.convert(result)
         return np.round(result,1)
     
     def __getitem__(self, index):
