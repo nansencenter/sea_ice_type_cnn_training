@@ -1,10 +1,11 @@
+# This script allows you to prepare the data for the data analysis stage by creating appropriate directories and keeping only the ice type and distance
+
 import glob
 import json
 import numpy as np
 
 
 #For the analysis
-
 idir='/Data/'
 with open(f'{idir}preprocessing/processed_files.json') as fichier_json:
     all_nc = json.load(fichier_json)

@@ -1,0 +1,25 @@
+This is the user guide for preprocessed the data, creating datasets, training a convolutional neural network and performing inference.
+
+1 Preprocessing:
+1.1 Creating the sub-images
+For this step you need a json file which contains the combinations you want to keep in your dataset. The name of this file should be "vector_combinations.json" and the data filled in under the key "all_work_comb".
+Then you just need to write the command line to run the build_dataset.py program (the biblioagraphy is shown in the read me on the previous page). 
+For example: nohup python build_dataset.py /Input /output -n nersc_sar -w 50 -s 50 -d 50> preprocessing.log 2>&1 &
+You also need to get data for inference afterwards. Just add -i to the parameters and change the path to your inference file.
+
+1.2 Cleaning the water
+A small program allows you to remove a certain percentage of the samples that contain only water. By default the percentage is 80% but you can just change this value directly in the python code.
+To launch the program a command line is possible.
+For example: nohup python cleaning_water.py > water.log 2>&1 &
+
+2) Create the data sets and train the network:
+
+First of all you have to choose the network to use. To do this go to the directory of the network name and open the python file.
+You just have to change the paths in the first lines of the file
+Then you just have to launch the command line to start the training.
+For example: nohup python cnn_train_network_choose.py > cnn_hugo_training.log 2>&1 &
+Once the program is finished, the model and the metrics are displayed in the location of the python file.
+
+3. inference
+Open the notebook named check_nameofnetwork.ipynb and change only the path to access the inference data and the previously trained model. Then run the notebook and wait for it to finish.
+

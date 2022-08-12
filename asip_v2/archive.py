@@ -79,7 +79,7 @@ class Batches:
     
     def check_view(self,view):
         """
-        to know if there is a nan in the view
+        To know if there is a nan in the view
         """
         bol=False
         if np.any(np.isnan(view[:,:])):
@@ -122,6 +122,20 @@ class SarBatches(Batches):
         return batches_array
     
     def view_as_windows(self, array):
+        """
+        This function allows the SAR image to be sliced and the two resolutions (noraml and small) 
+        and returns all informations concatenated into a single vector.
+        
+        Parameters
+        ----------
+        param_vecteur : array
+            Sar image form netcdf4 
+
+        Returns
+        -------
+        result : array
+            return the sub_images for the two resolutions
+        """
         window_size = (self.window *2, self.window*2)
         stride = self.stride
         if len(array.shape) == 3:
@@ -157,11 +171,19 @@ class OutputBatches(Batches):
         based on 'self.map_id_to_variable_values', all the values are converted to correct values
         of the very variable based on polygon ID values in each location in 2d array of values_array
         return only one vector because all pixels in the view are in the same segment so the same information
+        
+        Parameters
+        ----------
+        param_vecteur : array
+            a sub-image
+        Returns
+        -------
+        result : array
+            return the vector of parameters for this sub-image
         """
         if self.inference :
             list_array =array.flatten()
             id_poly = mode(list_array)
-#             numpy median
         else :
             id_poly = array[0][0]
         for id_value, variable_belong_to_id in self.map_id_to_variable_values.items():
@@ -170,6 +192,9 @@ class OutputBatches(Batches):
         return result
 
     def resize(self, array):
+        """
+        Do nothing
+        """
         return array
     
     def check_view(self,view):
@@ -270,6 +295,18 @@ class DistanceBatches(Batches):
         return bol
     
     def check_result (self, array):
+        """
+        This function is the filter about the distance. If the distance is higher than the threshold it is okay.
+        Parameters
+        ----------
+        param_vecteur : array
+            the value of distance 
+
+        Returns
+        -------
+        result : boolean
+           if the array is higher than the threshold
+        """
         return (array[0] > self.distance_threshold)
 
 class Amsr2Batches(Batches):
@@ -284,9 +321,15 @@ class Amsr2Batches(Batches):
         self.inference = archive_.inference
 
     def name_conventer(self, name):
+        """
+        This function replace . to _ in the name of the amsr2label
+        """
         return name.replace(".", "_")
 
     def resize(self, x):
+        """
+        Do nothing
+        """
         return x
 
     def get_array(self, fil, name):
